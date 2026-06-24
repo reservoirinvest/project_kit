@@ -1,0 +1,86 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch)",
+      "Bash(git checkout -b:*)",
+      "Bash(__YOUR_PKG_MANAGER__:*)",
+      "Bash(__YOUR_LINTER__:*)",
+      "Bash(__YOUR_TEST_RUNNER__:*)",
+      "Bash(__YOUR_RUNTIME__:*)",
+      "Read(./**)",
+      "Write(./src/**)",
+      "Write(./tests/**)",
+      "Write(./data/**)",
+      "Write(./PLAN.md)",
+      "Write(./PROGRESS.md)",
+      "Write(./ARCHITECTURE.md)",
+      "Write(./README.md)",
+      "Write(./CLAUDE.md)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git rebase:*)",
+      "Bash(rm -rf:*)",
+      "Write(./spec.md)",
+      "Write(./.env)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Read(./.env)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session_start_brief.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/pre_compact_sync.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/post_edit_stage.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/stop_autocommit.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

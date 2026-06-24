@@ -1,0 +1,49 @@
+# .driveignore
+# NOT a git mechanism. This documents what should be EXCLUDED if you mirror
+# this folder into Google Drive (manually, via a sync script, or via
+# Google Drive Desktop's selective sync / "Mirror files" exclusion rules).
+#
+# Why this file exists: .gitignore and .driveignore have DIFFERENT logic.
+#   .env          -> git: EXCLUDE always   | drive: INCLUDE (drive is your secure channel)
+#   .venv/         -> git: EXCLUDE          | drive: EXCLUDE (huge, regenerable, OS-specific)
+#   .git/          -> git: n/a              | drive: EXCLUDE (binary churn, merge-conflicts Drive badly)
+#   data/master/*.pkl -> git: EXCLUDE       | drive: INCLUDE (this is what you're sharing!)
+#
+# RECOMMENDED APPROACH (avoids "Drive Desktop mirrors local folder" entirely,
+# which is the slow/flaky pattern you've hit before):
+#
+#   Do NOT point Google Drive Desktop at C:\Users\kashi\python\tz directly.
+#   Instead, keep this folder purely local + git, and use ONE of:
+#
+#   (a) A scheduled robocopy/rsync job that pushes only the allow-listed
+#       paths below into a SEPARATE Drive-mirrored folder
+#       (e.g. G:\My Drive\tz-share\), so Drive's sync engine only ever
+#       sees a small, clean folder — never .venv, .git internals, or caches.
+#
+#   (b) Manual "Add to Drive" of specific files/folders when you're ready
+#       to share a checkpoint (lowest automation, but zero risk of Drive
+#       choking on .venv churn).
+#
+#   (c) `gdrive` CLI / Drive API upload script (uv-managed) that uploads
+#       the allow-listed paths on demand — see scripts/sync_to_drive.py
+#       once Feature N needs it. Not built yet; add to spec.md as a
+#       Core utility if you want this automated.
+#
+# ALLOW-LIST (only these go to Drive):
+#   spec.md
+#   PLAN.md
+#   PROGRESS.md
+#   ARCHITECTURE.md
+#   README.md
+#   .env
+#   requirements.txt
+#   data/master/*.pkl
+#   src/**/*.py
+#   tests/**/*.py
+#
+# EXCLUDE (never to Drive):
+#   .venv/
+#   .git/
+#   __pycache__/, *.pyc
+#   .ruff_cache/, .pytest_cache/
+#   .claude/hooks.log
