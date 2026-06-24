@@ -6,35 +6,51 @@ or when a taxonomy/UI node needs an SVG icon that doesn't exist in `static/img/`
 ## Priority order for icon sources
 
 1. **Phosphor Icons** (primary) — all 256×256, `fill="currentColor"`, clean for
-   dark-mode use. Browse at https://phosphoricons.com/. The `static/img/` folder
-   already contains a curated subset. Before searching externally, grep the folder:
+   dark-mode use. GitHub raw: `https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/<name>.svg`.
+   The `static/img/` folder already contains a curated subset — grep it first:
    ```
    ls static/img/*.svg | grep -i <keyword>
    ```
-   Phosphor SVGs must have `viewBox="0 0 256 256"` — verify before using.
 
-2. **SVG Repo** — https://svgrepo.com/ — large free library, mixed licences.
-   Search for the concept, filter by licence (CC0 preferred). Always check the
-   `viewBox` — the icon renderer in `src/utils/ecosystem.py` scales by `iw/256`,
-   so a 64×64 icon will render at 1/4 the expected size. Normalise the coordinate
-   space to 256×256 if needed (scale all path coords × 4, update viewBox).
+2. **svgl** — https://svgl.app/ — brand / product **logos** only (company marks,
+   framework badges). Use this when the target IS a brand logo, not a generic icon.
 
-3. **Icones.js** — https://icones.js.org/ — aggregates Phosphor, Material, Tabler,
-   Heroicons and many others. Pick an icon, copy the SVG source.
+3. **SVG Repo** — https://svgrepo.com/ — large free library, mixed licences.
+   Filter by CC0. Always check `viewBox` — a 24×24 icon needs normalising (see below).
 
-4. **svgl** — https://svgl.app/ — brand / product logos only (company marks,
-   framework badges). Not for generic UI icons.
+4. **Icones.js** — https://icones.js.org/ — aggregates Phosphor, Material, Tabler,
+   Heroicons and others. Good fallback when Phosphor has no match.
+
+## How to download icons — USE BASH, NOT WebFetch+Write
+
+**Never** use `WebFetch` + `Write` for icon files. That loads SVG content into the
+context window unnecessarily. Use a single `Bash` call with `curl` instead:
+
+```bash
+# Single icon
+curl -sL "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/trophy.svg" \
+  -o "static/img/trophy.svg"
+
+# Multiple icons at once (far more efficient)
+for icon in flag-checkered trophy dna fish megaphone buildings; do
+  curl -sL "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/$icon.svg" \
+    -o "static/img/$icon.svg"
+done
+```
+
+For svgl/SVGRepo, find the direct CDN URL for the SVG and curl it the same way.
+Only use `WebFetch` if you need to *inspect* page content to find the right URL
+(e.g. scraping an svgrepo search result). Once you have the direct `.svg` URL, curl it.
 
 ## Normalising a non-256 SVG
 
 If you download an icon with a different viewBox (e.g. `0 0 24 24`):
-- Keep the `viewBox` as-is (it doesn't need to be 256×256).
-- The renderer already reads the viewBox and scales correctly IF you update
-  `icon_inner()` to use the actual viewBox size instead of hardcoding 256.
-  Currently `ecosystem.py` line: `const s = iw / 256;` — if the icon is 24×24,
-  change its wrapper to `scale(iw / 24)` or normalise the SVG to 256 coords.
-- Easiest fix: in `static/img/`, save a 256×256 normalised version. Use
-  `viewBox="0 0 256 256"` and scale path data by `256/original_size`.
+- Keep the `viewBox` as-is — it doesn't need to be 256×256.
+- The renderer reads the viewBox and scales correctly IF `icon_inner()` uses the
+  actual size. Currently `ecosystem.py` hardcodes `iw / 256` — if the icon is 24×24,
+  normalise path coords × (256/24) and set `viewBox="0 0 256 256"`.
+- Easiest: normalise to 256×256 in `static/img/`. Scale all path coordinates by
+  `256 / original_size`.
 
 ## File format rules for `static/img/`
 
@@ -46,8 +62,7 @@ If you download an icon with a different viewBox (e.g. `0 0 24 24`):
 ```
 
 Strip: `fill="#000"`, `fill="#000000"`, `stroke="none"`, `width=`, `height=` attributes.
-The `icon_inner()` function in `ecosystem.py` already strips `fill="#000"` but keep
-files clean for future reuse.
+`icon_inner()` strips `fill="#000"` at runtime, but keep files clean for reuse.
 
 ## How `icon_inner()` works (don't break it)
 
@@ -58,9 +73,8 @@ body = body[: body.rindex("</svg>")]
 body = body.replace('fill="#000000"', "").replace('fill="#000"', "")
 ```
 
-It strips the outer `<svg>` wrapper and returns the inner path elements, which are
-then placed inside an SVG `<g>` scaled to fit the node badge. Keep SVG files
-single-root (one `<svg>` element, no nested `<svg>`).
+Extracts inner path elements, strips the outer `<svg>` wrapper, and places them
+inside a scaled `<g>`. Keep SVG files single-root (one `<svg>`, no nested `<svg>`).
 
 ## Checklist before committing a new icon
 
