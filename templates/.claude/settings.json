@@ -14,14 +14,14 @@
       "Bash(__YOUR_TEST_RUNNER__:*)",
       "Bash(__YOUR_RUNTIME__:*)",
       "Read(./**)",
-      "Write(./src/**)",
-      "Write(./tests/**)",
-      "Write(./data/**)",
-      "Write(./PLAN.md)",
-      "Write(./PROGRESS.md)",
-      "Write(./ARCHITECTURE.md)",
-      "Write(./README.md)",
-      "Write(./CLAUDE.md)"
+      "Edit(./src/**)",
+      "Edit(./tests/**)",
+      "Edit(./data/**)",
+      "Edit(./PLAN.md)",
+      "Edit(./PROGRESS.md)",
+      "Edit(./ARCHITECTURE.md)",
+      "Edit(./README.md)",
+      "Edit(./CLAUDE.md)"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -29,12 +29,12 @@
       "Bash(git branch -D:*)",
       "Bash(git rebase:*)",
       "Bash(rm -rf:*)",
-      "Write(./spec.md)",
-      "Write(./.env)"
+      "Edit(./spec.md)",
+      "Edit(./.secrets/.env)"
     ],
     "deny": [
       "Bash(git push --force:*)",
-      "Read(./.env)"
+      "Read(./.secrets/.env)"
     ]
   },
   "hooks": {

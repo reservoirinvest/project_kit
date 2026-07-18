@@ -10,7 +10,8 @@ __pycache__/
 dist/
 build/
 
-# --- Secrets: NEVER in git, but fine in Google Drive (Drive is the secure channel) ---
+# --- Secrets folder: NEVER in git, fine in Google Drive (Drive is the secure channel) ---
+.secrets/
 .env
 .env.*
 !.env.example
@@ -24,6 +25,7 @@ data/**/*.parquet
 # --- OS / editor cruft ---
 .DS_Store
 Thumbs.db
+*.stackdump
 .vscode/*
 !.vscode/settings.json
 .idea/

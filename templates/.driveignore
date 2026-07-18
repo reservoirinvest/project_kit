@@ -4,7 +4,7 @@
 # Google Drive Desktop's selective sync / "Mirror files" exclusion rules).
 #
 # Why this file exists: .gitignore and .driveignore have DIFFERENT logic.
-#   .env          -> git: EXCLUDE always   | drive: INCLUDE (drive is your secure channel)
+#   .secrets/.env -> git: EXCLUDE always   | drive: INCLUDE (drive is your secure channel)
 #   .venv/         -> git: EXCLUDE          | drive: EXCLUDE (huge, regenerable, OS-specific)
 #   .git/          -> git: n/a              | drive: EXCLUDE (binary churn, merge-conflicts Drive badly)
 #   data/master/*.pkl -> git: EXCLUDE       | drive: INCLUDE (this is what you're sharing!)
@@ -12,13 +12,14 @@
 # RECOMMENDED APPROACH (avoids "Drive Desktop mirrors local folder" entirely,
 # which is the slow/flaky pattern you've hit before):
 #
-#   Do NOT point Google Drive Desktop at C:\Users\kashi\python\tz directly.
+#   Do NOT point Google Drive Desktop at this project folder directly.
 #   Instead, keep this folder purely local + git, and use ONE of:
 #
 #   (a) A scheduled robocopy/rsync job that pushes only the allow-listed
 #       paths below into a SEPARATE Drive-mirrored folder
-#       (e.g. G:\My Drive\tz-share\), so Drive's sync engine only ever
-#       sees a small, clean folder — never .venv, .git internals, or caches.
+#       (e.g. G:\My Drive\{{PROJECT_NAME}}-share\), so Drive's sync engine
+#       only ever sees a small, clean folder — never .venv, .git internals,
+#       or caches.
 #
 #   (b) Manual "Add to Drive" of specific files/folders when you're ready
 #       to share a checkpoint (lowest automation, but zero risk of Drive
@@ -35,7 +36,7 @@
 #   PROGRESS.md
 #   ARCHITECTURE.md
 #   README.md
-#   .env
+#   .secrets/.env
 #   requirements.txt
 #   data/master/*.pkl
 #   src/**/*.py

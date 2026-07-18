@@ -8,7 +8,7 @@ it's just a file Claude reads, not a hidden store.)*
 *(domain terms specific to this project)*
 
 ## External sources / APIs
-*(endpoints, quirks, rate limits, auth notes — NO secrets here, those go in .env)*
+*(endpoints, quirks, rate limits, auth notes — NO secrets here, those go in .secrets/.env)*
 
 ## Conventions decided over time
 *(naming patterns, file layouts, data formats agreed during the build)*

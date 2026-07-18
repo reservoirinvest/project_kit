@@ -22,8 +22,10 @@ PROGRESS.md fall out of sync, so skipping is wasted effort anyway.
 3. **Plan Mode gate.** If the feature touches src/core/, introduces a new core
    abstraction, has a multi-state model, has 2+ viable architectures, or makes
    an expensive-to-unwind decision (schema, on-disk format, public contract)
-   → STOP and say: "This warrants Plan Mode because [reason]. Recommend
-   switching to Opus for the planning session." Wait for Kashi.
+   → STOP and say: "This warrants Plan Mode because [reason]. Recommend the
+   top reasoning model for the planning session." Wait for Kashi. Start the
+   planning session from the `design-principles` skill's pattern catalogue —
+   reuse a proven pattern before inventing one.
 
 4. **Ambiguity gate.** If spec.md is unclear on something architecturally
    significant (state model, error strategy, sync/async, partial-failure
@@ -41,7 +43,9 @@ PROGRESS.md fall out of sync, so skipping is wasted effort anyway.
    - PLAN.md: overwrite the current-feature section (current state only, not a log)
    - PROGRESS.md: append one tight paragraph — feature name, what was built,
      files touched, core-vs-feature call, deviations from spec
-   - ARCHITECTURE.md: ONLY if a real design decision was made this cycle
+   - ARCHITECTURE.md: ONLY if a real design decision was made this cycle,
+     and ≤1 paragraph per decision (what was decided, why, what was
+     rejected). Implementation narrative goes in PROGRESS.md, not here.
    - README.md: ONLY if entrypoints / setup changed
 
 8. **Design-principle flag (2-3 lines max).** Note any risk: tight coupling,

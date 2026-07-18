@@ -62,7 +62,8 @@ If you download an icon with a different viewBox (e.g. `0 0 24 24`):
 ```
 
 Strip: `fill="#000"`, `fill="#000000"`, `stroke="none"`, `width=`, `height=` attributes.
-`icon_inner()` strips `fill="#000"` at runtime, but keep files clean for reuse.
+`icon_inner()` in `ecosystem.py` strips `fill="#000"` at runtime, but keep files
+clean for reuse.
 
 ## How `icon_inner()` works (don't break it)
 

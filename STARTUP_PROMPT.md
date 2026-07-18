@@ -32,16 +32,19 @@ propose your setup plan and ASK my permission before creating files.
      for free, so you don't spend a tool call re-orienting).
    - Permissions: allow git add/commit/status/diff/log, my toolchain, and
      writes scoped to this folder; ASK on git push/reset/branch -D/rebase,
-     spec.md writes, and .env writes; DENY force-push and Read(.env).
-4. **`.gitignore`** (excludes venv, caches, data artifacts, AND .env) and a
-   **`.driveignore`** documenting a separate-folder Drive-share strategy
+     spec.md writes, and .secrets/.env writes; DENY force-push and
+     Read(.secrets/.env).
+4. **`.gitignore`** (excludes venv, caches, data artifacts, AND `.secrets/`) and
+   a **`.driveignore`** documenting a separate-folder Drive-share strategy
    (never point Drive Desktop at the live git working tree — it's slow and
    conflicts with the working tree + venv churn).
 5. **Dependency manifest** for my toolchain, PLUS a generated
    `requirements.txt` (so collaborators without my tooling can install) that
    you regenerate after every dependency change.
-6. **`.env` handling**: git-ignored always; safe to live in my Drive-shared
-   copy (Drive is my secure channel); never print its contents.
+6. **`.secrets/.env` handling**: all secrets live there (git-ignored
+   always; safe to live in my Drive-shared copy since Drive is my secure
+   channel); never print its contents. `.env.example` stays at project root,
+   tracked in git, as the template collaborators copy from.
 
 ## My toolchain & environment
 - Package manager: {{PKG_MANAGER}}   (e.g. uv)

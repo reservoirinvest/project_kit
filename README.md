@@ -28,8 +28,8 @@ project-kit/
 ## Per new project
 1. Create + enter a new empty folder.
 2. Run the bootstrap from there:
-   - PowerShell: `powershell -ExecutionPolicy Bypass -File C:\Users\you\project-kit\new-project.ps1`
-   - bash:       `bash /path/to/project-kit/new-project.sh`
+   - PowerShell: `powershell -ExecutionPolicy Bypass -File C:\Users\kashi\workspace\_project_kit\new-project.ps1`
+   - bash:       `bash C:/Users/kashi/workspace/_project_kit/new-project.sh`
    It refuses to run in a non-empty folder (asks first), copies templates,
    makes folder stubs, and prints next steps. **It does NOT run git or installs
    or invoke Claude** — that's the permission gate.
@@ -58,4 +58,4 @@ non-zero exit code, which both bash and PowerShell support.
   features, frontier model only when stuck, lightest model for trivial work.
 - Git is source of truth; Drive is a separate human-share channel (never
   mirror Drive Desktop onto the live working tree).
-- .env: git-ignored always, Drive-shareable if you designate Drive secure.
+- .secrets/.env: git-ignored always, Drive-shareable if you designate Drive secure.
