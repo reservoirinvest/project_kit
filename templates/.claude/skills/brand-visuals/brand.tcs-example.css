@@ -1,0 +1,597 @@
+/*
+ * TCS Modern HTML Theme
+ * Combined light + dark design system
+ *
+ * Theme control:
+ *   Automatic: follows prefers-color-scheme when no data-theme is set.
+ *   Manual:    <html data-theme="light"> or <html data-theme="dark">
+ *
+ * Accessibility notes:
+ * - #2469BC with white text: suitable for normal CTA text.
+ * - #4E84C4 is retained as a brand accent but should not be used for
+ *   normal text on white.
+ * - #5B8ECB is provided as the accessible small-text/link blue on dark
+ *   secondary surfaces.
+ * - #E2A330 should use black text when used as a filled surface.
+ */
+
+/* --------------------------------------------------------------------------
+   1. Core brand primitives
+   -------------------------------------------------------------------------- */
+
+:root {
+  --font-heading:
+    "Houschka Medium",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen-Sans,
+    Ubuntu,
+    Cantarell,
+    "Helvetica Neue",
+    sans-serif;
+
+  --font-body:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen-Sans,
+    Ubuntu,
+    Cantarell,
+    "Helvetica Neue",
+    sans-serif;
+
+  --tcs-blue-primary: #2469bc;
+  --tcs-blue-secondary: #4e84c4;
+  --tcs-blue-dark: #1d579e;
+  --tcs-blue-dark-accessible: #5b8ecb;
+
+  --tcs-yellow: #e2a330;
+
+  --neutral-white: #ffffff;
+  --neutral-black: #000000;
+  --neutral-light-surface: #f4f3f9;
+  --neutral-dark-surface: #1a1a1a;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  --transition-fast: 140ms ease;
+  --transition-standard: 220ms ease;
+}
+
+/* --------------------------------------------------------------------------
+   2. Light theme
+   -------------------------------------------------------------------------- */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f3f9;
+  --surface-primary: #ffffff;
+  --surface-secondary: #f4f3f9;
+  --surface-elevated: #ffffff;
+  --surface-hover: #ecebf3;
+
+  --text-primary: #000000;
+  --text-secondary: #303238;
+  --text-muted: #5a5d66;
+  --text-inverse: #ffffff;
+
+  --border-subtle: #d9dce3;
+  --border-strong: #a7abb5;
+  --divider: #e2e4e9;
+
+  --accent-primary: #2469bc;
+  --accent-primary-hover: #1d579e;
+  --accent-primary-active: #17487f;
+  --accent-secondary: #4e84c4;
+  --accent-text: #2469bc;
+  --accent-soft: #e7f0fa;
+
+  --cta-bg: #2469bc;
+  --cta-hover: #1d579e;
+  --cta-active: #17487f;
+  --cta-text: #ffffff;
+
+  --focus-ring: #2469bc;
+  --focus-ring-offset: #ffffff;
+
+  --selection-bg: #dceafa;
+  --selection-text: #000000;
+
+  --status-success: #087a52;
+  --status-success-bg: #e8f5ef;
+  --status-success-border: #9bd5bf;
+
+  --status-warning: #8a5a00;
+  --status-warning-bg: #fff4d6;
+  --status-warning-border: #e2a330;
+
+  --status-danger: #b42318;
+  --status-danger-bg: #fdecea;
+  --status-danger-border: #e09a94;
+
+  --status-orange: #b54708;
+  --status-orange-bg: #fff0e5;
+  --status-orange-border: #e9ad7d;
+
+  --brand-yellow: #e2a330;
+  --brand-yellow-text: #000000;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 6px 18px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.12);
+}
+
+/* --------------------------------------------------------------------------
+   3. Dark theme
+   -------------------------------------------------------------------------- */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-primary: #000000;
+  --bg-secondary: #1a1a1a;
+  --surface-primary: #000000;
+  --surface-secondary: #1a1a1a;
+  --surface-elevated: #242424;
+  --surface-hover: #2b2b2b;
+
+  --text-primary: #ffffff;
+  --text-secondary: #d6d9de;
+  --text-muted: #b8bcc6;
+  --text-inverse: #000000;
+
+  --border-subtle: #33363b;
+  --border-strong: #666b74;
+  --divider: #2d3035;
+
+  /* Core brand colors remain unchanged. */
+  --accent-primary: #2469bc;
+  --accent-primary-hover: #2f75c8;
+  --accent-primary-active: #1d579e;
+  --accent-secondary: #4e84c4;
+
+  /*
+   * Accessible small-text/link blue on #1A1A1A.
+   * Use instead of #2469BC for normal-sized text.
+   */
+  --accent-text: #5b8ecb;
+  --accent-soft: #10243c;
+
+  --cta-bg: #2469bc;
+  --cta-hover: #2f75c8;
+  --cta-active: #1d579e;
+  --cta-text: #ffffff;
+
+  --focus-ring: #5b8ecb;
+  --focus-ring-offset: #000000;
+
+  --selection-bg: #244a76;
+  --selection-text: #ffffff;
+
+  --status-success: #35b779;
+  --status-success-bg: #0c2b20;
+  --status-success-border: #237a56;
+
+  --status-warning: #f2c14e;
+  --status-warning-bg: #33290f;
+  --status-warning-border: #9e7a1e;
+
+  --status-danger: #f06a6a;
+  --status-danger-bg: #351717;
+  --status-danger-border: #984545;
+
+  --status-orange: #f09a3e;
+  --status-orange-bg: #352313;
+  --status-orange-border: #a46729;
+
+  --brand-yellow: #e2a330;
+  --brand-yellow-text: #000000;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-md: 0 8px 22px rgb(0 0 0 / 0.42);
+  --shadow-lg: 0 18px 50px rgb(0 0 0 / 0.5);
+}
+
+/* Follow the operating system when no explicit data-theme is present. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    --bg-primary: #000000;
+    --bg-secondary: #1a1a1a;
+    --surface-primary: #000000;
+    --surface-secondary: #1a1a1a;
+    --surface-elevated: #242424;
+    --surface-hover: #2b2b2b;
+
+    --text-primary: #ffffff;
+    --text-secondary: #d6d9de;
+    --text-muted: #b8bcc6;
+    --text-inverse: #000000;
+
+    --border-subtle: #33363b;
+    --border-strong: #666b74;
+    --divider: #2d3035;
+
+    --accent-primary: #2469bc;
+    --accent-primary-hover: #2f75c8;
+    --accent-primary-active: #1d579e;
+    --accent-secondary: #4e84c4;
+    --accent-text: #5b8ecb;
+    --accent-soft: #10243c;
+
+    --cta-bg: #2469bc;
+    --cta-hover: #2f75c8;
+    --cta-active: #1d579e;
+    --cta-text: #ffffff;
+
+    --focus-ring: #5b8ecb;
+    --focus-ring-offset: #000000;
+
+    --selection-bg: #244a76;
+    --selection-text: #ffffff;
+
+    --status-success: #35b779;
+    --status-success-bg: #0c2b20;
+    --status-success-border: #237a56;
+
+    --status-warning: #f2c14e;
+    --status-warning-bg: #33290f;
+    --status-warning-border: #9e7a1e;
+
+    --status-danger: #f06a6a;
+    --status-danger-bg: #351717;
+    --status-danger-border: #984545;
+
+    --status-orange: #f09a3e;
+    --status-orange-bg: #352313;
+    --status-orange-border: #a46729;
+
+    --brand-yellow: #e2a330;
+    --brand-yellow-text: #000000;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+    --shadow-md: 0 8px 22px rgb(0 0 0 / 0.42);
+    --shadow-lg: 0 18px 50px rgb(0 0 0 / 0.5);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. Base document styles
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  transition:
+    background-color var(--transition-standard),
+    color var(--transition-standard);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-block: 0 0.5em;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-weight: 500;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+p {
+  color: var(--text-secondary);
+}
+
+small,
+.text-muted {
+  color: var(--text-muted);
+}
+
+a {
+  color: var(--accent-text);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.16em;
+}
+
+a:hover {
+  text-decoration-thickness: 0.12em;
+}
+
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+/* --------------------------------------------------------------------------
+   5. Focus and interaction states
+   -------------------------------------------------------------------------- */
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* --------------------------------------------------------------------------
+   6. Buttons
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0.625rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: 600 0.95rem/1 var(--font-body);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-primary {
+  border-color: var(--cta-bg);
+  background: var(--cta-bg);
+  color: var(--cta-text);
+}
+
+.btn-primary:hover {
+  border-color: var(--cta-hover);
+  background: var(--cta-hover);
+  color: var(--cta-text);
+}
+
+.btn-primary:active {
+  border-color: var(--cta-active);
+  background: var(--cta-active);
+}
+
+.btn-secondary {
+  border-color: var(--border-strong);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-hover);
+}
+
+/* --------------------------------------------------------------------------
+   7. Surfaces and cards
+   -------------------------------------------------------------------------- */
+
+.section-secondary {
+  background: var(--bg-secondary);
+}
+
+.card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-interactive:hover {
+  border-color: var(--accent-secondary);
+  box-shadow: var(--shadow-md);
+}
+
+/* --------------------------------------------------------------------------
+   8. Forms
+   -------------------------------------------------------------------------- */
+
+label {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+input,
+select {
+  padding-inline: 0.75rem;
+}
+
+textarea {
+  padding: 0.75rem;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--accent-secondary);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--focus-ring);
+}
+
+/* --------------------------------------------------------------------------
+   9. Tables
+   -------------------------------------------------------------------------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-primary);
+}
+
+th {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: left;
+}
+
+th,
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--divider);
+}
+
+tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+/* --------------------------------------------------------------------------
+   10. Status and accent utilities
+   -------------------------------------------------------------------------- */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.25rem 0.625rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.status-success {
+  border-color: var(--status-success-border);
+  background: var(--status-success-bg);
+  color: var(--status-success);
+}
+
+.status-warning {
+  border-color: var(--status-warning-border);
+  background: var(--status-warning-bg);
+  color: var(--status-warning);
+}
+
+.status-danger {
+  border-color: var(--status-danger-border);
+  background: var(--status-danger-bg);
+  color: var(--status-danger);
+}
+
+.status-orange {
+  border-color: var(--status-orange-border);
+  background: var(--status-orange-bg);
+  color: var(--status-orange);
+}
+
+.accent-yellow {
+  background: var(--brand-yellow);
+  color: var(--brand-yellow-text);
+}
+
+/* Decorative brand accents. Do not assume these are valid for small text. */
+.brand-blue-primary {
+  color: var(--accent-primary);
+}
+
+.brand-blue-secondary {
+  color: var(--accent-secondary);
+}
+
+/* Use for normal-sized inline blue text and links. */
+.brand-blue-text {
+  color: var(--accent-text);
+}
+
+/* --------------------------------------------------------------------------
+   11. Accessibility and user preferences
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .btn,
+  .card,
+  input,
+  select,
+  textarea,
+  .status {
+    forced-color-adjust: auto;
+  }
+}

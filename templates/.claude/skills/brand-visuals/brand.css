@@ -1,0 +1,212 @@
+/*
+ * RKV Strategic Advisory brand — MASTER SEED.
+ * Copy verbatim into a new project; edit ONLY the primitives in section 1.
+ * Extracted from the kite dashboard (the reference implementation) per the
+ * workspace brand law:
+ *   Deep Boardroom Navy #0E294E · Strategic Blue #1E56A0 · Muted Gold #D4AF37
+ *   Sharp geometry (border-radius 0), no gradients, no shadows.
+ * Colors are ALWAYS referenced via the semantic variables below, never inline.
+ *
+ * Theme: automatic via prefers-color-scheme; manual override with
+ * <html data-theme="light"> / <html data-theme="dark">.
+ */
+
+/* 1. Primitives -------------------------------------------------------------- */
+:root {
+  --font-heading:
+    "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+  --font-body:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: "Cascadia Code", "SF Mono", "Consolas", "Liberation Mono", monospace;
+
+  --rk-navy: #0e294e; /* Deep Boardroom Navy — hero */
+  --rk-blue: #1e56a0; /* Strategic Blue — secondary */
+  --rk-blue-hover: #17457f;
+  --rk-blue-active: #113562;
+  --rk-gold: #d4af37; /* Muted Gold — accent, sparingly */
+  --rk-canvas-light: #f8f9fa;
+  --rk-canvas-dark: #07162c;
+  --rk-body-text: #0a192f;
+  --rk-muted: #5a6b82;
+
+  --radius: 0; /* sharp geometry — brand rule */
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --transition-fast: 120ms ease;
+}
+
+/* 2. Light theme ------------------------------------------------------------- */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-primary: var(--rk-canvas-light);
+  --bg-secondary: #eef1f5;
+  --surface: #ffffff;
+  --surface-hover: #eef1f5;
+
+  --text-primary: var(--rk-body-text);
+  --text-secondary: #2a3a52;
+  --text-muted: var(--rk-muted);
+  --text-inverse: #ffffff;
+
+  --border-subtle: #d3dae3;
+  --border-strong: #a9b5c4;
+  --divider: #e2e7ee;
+
+  --accent-primary: var(--rk-blue);
+  --accent-hover: var(--rk-blue-hover);
+  --accent-active: var(--rk-blue-active);
+  --accent-text: var(--rk-blue);
+  --accent-soft: #e7eef7;
+  --brand-hero: var(--rk-navy);
+  --brand-gold: var(--rk-gold);
+  --brand-gold-text: #000000;
+
+  --status-success: #0a7a4f;
+  --status-success-bg: #e6f4ee;
+  --status-warning: #8a6100;
+  --status-warning-bg: #fbf1d8;
+  --status-danger: #b42318;
+  --status-danger-bg: #fcebe9;
+
+  --focus-ring: var(--rk-blue);
+}
+
+/* 3. Dark theme -------------------------------------------------------------- */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-primary: var(--rk-canvas-dark);
+  --bg-secondary: #0c1f3c;
+  --surface: #0e294e;
+  --surface-hover: #143560;
+
+  --text-primary: #eaf1fb;
+  --text-secondary: #c2d0e4;
+  --text-muted: #8fa2bd;
+  --text-inverse: #07162c;
+
+  --border-subtle: #1d3a63;
+  --border-strong: #2f5288;
+  --divider: #17335c;
+
+  --accent-primary: #3a72c0;
+  --accent-hover: #4c81ca;
+  --accent-active: #2f5fa8;
+  --accent-text: #7ba6dc;
+  --accent-soft: #10294a;
+  --brand-hero: #0a1f3c;
+  --brand-gold: var(--rk-gold);
+  --brand-gold-text: #000000;
+
+  --status-success: #35b779;
+  --status-success-bg: #0c2b20;
+  --status-warning: #e0b64e;
+  --status-warning-bg: #2f2710;
+  --status-danger: #f06a6a;
+  --status-danger-bg: #331717;
+
+  --focus-ring: #7ba6dc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    --bg-primary: var(--rk-canvas-dark);
+    --bg-secondary: #0c1f3c;
+    --surface: #0e294e;
+    --surface-hover: #143560;
+
+    --text-primary: #eaf1fb;
+    --text-secondary: #c2d0e4;
+    --text-muted: #8fa2bd;
+    --text-inverse: #07162c;
+
+    --border-subtle: #1d3a63;
+    --border-strong: #2f5288;
+    --divider: #17335c;
+
+    --accent-primary: #3a72c0;
+    --accent-hover: #4c81ca;
+    --accent-active: #2f5fa8;
+    --accent-text: #7ba6dc;
+    --accent-soft: #10294a;
+    --brand-hero: #0a1f3c;
+    --brand-gold: var(--rk-gold);
+    --brand-gold-text: #000000;
+
+    --status-success: #35b779;
+    --status-success-bg: #0c2b20;
+    --status-warning: #e0b64e;
+    --status-warning-bg: #2f2710;
+    --status-danger: #f06a6a;
+    --status-danger-bg: #331717;
+
+    --focus-ring: #7ba6dc;
+  }
+}
+
+/* 4. Base -------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-block: 0 0.5em;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+a {
+  color: var(--accent-text);
+  text-underline-offset: 0.16em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+button,
+input,
+select,
+textarea {
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
