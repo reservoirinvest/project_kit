@@ -12,7 +12,9 @@ project-kit/
 ├── new-project.ps1         # Windows bootstrap (run once in an empty folder)
 ├── new-project.sh          # bash/WSL/mac/Linux bootstrap
 ├── sync-skills.ps1         # push canonical kit skills out to live projects
-├── retire-project.ps1      # archive a finished project to Drive (see /retire skill)
+├── backup-project.ps1      # copy a LIVE project to Drive (see /backup skill)
+├── retire-project.ps1      # archive a FINISHED project + remove it (/retire)
+├── lib/project-copy.ps1    # shared copy engine + exclusion list for both
 ├── lessons/                # notes rescued from retired projects
 └── templates/              # Files copied into each new project
     ├── CLAUDE.md            # Persistent instructions (with {{PLACEHOLDERS}})
@@ -73,6 +75,16 @@ motivated it. `/advisor` audits projects against it.
 To add one: say **"enshrine X"** in any session. It gets generalized, written
 up with its motivating failure, and fanned out. A pattern with no recorded
 failure is a style opinion — it stays out.
+
+## Backing up a live project
+`/backup <project>` (skill) drives `backup-project.ps1`: copies the project to
+`G:\My Drive\_projects\<name>` and changes nothing else — the workspace copy,
+the registries and git are all untouched. Re-run it as often as you like.
+
+Unlike `/retire` it **includes `.git`** and **never blocks**: uncommitted work,
+unpushed commits and a missing remote are the conditions a backup exists for,
+so they are reported, not refused. `-Mirror` makes it an exact reflection but
+deletes at the destination — opt in only.
 
 ## Retiring a finished project
 `/retire <project>` (skill) drives `retire-project.ps1`: archives the project

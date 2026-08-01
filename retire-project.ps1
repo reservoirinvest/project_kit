@@ -30,20 +30,15 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Shared with backup-project.ps1 — one definition of what a project is made of.
+. "$PSScriptRoot\lib\project-copy.ps1"
 
 $src = Join-Path $SourceRoot $Project
 $dst = Join-Path $DestRoot   $Project
 
-$ExcludeDirs = @(
-    '.git', '.claude', '.venv', 'venv', '__pycache__', '.pytest_cache',
-    '.ruff_cache', '.mypy_cache', 'node_modules', 'build', 'dist',
-    '.ipynb_checkpoints', '.zed'
-)
-$ExcludeFiles = @('*.stackdump', '*.pyc')
-
-function Fail($msg) { Write-Host "BLOCKED: $msg" -ForegroundColor Red; exit 1 }
-function Warn($msg) { Write-Host "WARN:    $msg" -ForegroundColor Yellow }
-function Ok($msg)   { Write-Host "ok:      $msg" -ForegroundColor Green }
+function Fail($msg) { Write-CopyFail $msg; exit 1 }
+function Warn($msg) { Write-CopyWarn $msg }
+function Ok($msg)   { Write-CopyOk $msg }
 
 Write-Host "`n=== retire: $Project ===" -ForegroundColor Cyan
 Write-Host "  source: $src"
@@ -94,43 +89,26 @@ if (Test-Path $dst) {
 }
 
 # --- Copy -----------------------------------------------------------------
-$rcArgs = @($src, $dst, '/E', '/R:1', '/W:1', '/NFL', '/NDL', '/NJH', '/NP')
-if ($ExcludeDirs)  { $rcArgs += '/XD'; $rcArgs += $ExcludeDirs }
-if ($ExcludeFiles) { $rcArgs += '/XF'; $rcArgs += $ExcludeFiles }
-if (-not $Apply)   { $rcArgs += '/L' }   # /L = list only, copy nothing
-
-Write-Host ("`n{0}robocopy {1}`n" -f $(if ($Apply) { '' } else { 'DRY RUN: ' }), ($rcArgs -join ' ')) -ForegroundColor DarkGray
-
-& robocopy @rcArgs | Out-Host
-$rc = $LASTEXITCODE
+# No -IncludeGit: the archive is a working copy, history stays with the remote.
+# That is exactly why the pre-flight above refuses a project with no remote.
+$rc = Invoke-ProjectCopy -Source $src -Dest $dst -ListOnly:(-not $Apply)
 if ($rc -ge 8) { Fail "robocopy failed with exit code $rc" }
 
 if (-not $Apply) {
     Write-Host "`nDry run only. Nothing was copied. Re-run with -Apply." -ForegroundColor Cyan
-    exit 0
+    exit 0   # not $LASTEXITCODE — robocopy's 1 means "would copy", not failure
 }
 
 # --- Verify ---------------------------------------------------------------
-$srcCount = (Get-ChildItem $src -Recurse -File -Force -ErrorAction SilentlyContinue |
-    Where-Object { $p = $_.FullName
-        -not ($ExcludeDirs | Where-Object { $p -like "*\$_\*" }) -and
-        -not ($ExcludeFiles | Where-Object { $_ -and $p -like "*$_" }) } |
-    Measure-Object).Count
 $dstCount = (Get-ChildItem $dst -Recurse -File -Force -ErrorAction SilentlyContinue | Measure-Object).Count
 $dstSize  = (Get-ChildItem $dst -Recurse -File -Force -ErrorAction SilentlyContinue |
     Measure-Object -Property Length -Sum).Sum / 1MB
 
 Write-Host ''
 Ok ("archived {0} files, {1:N1} MB -> {2}" -f $dstCount, $dstSize, $dst)
-if ($dstCount -lt $srcCount) { Warn "source counted ~$srcCount eligible files vs $dstCount archived — inspect before removing the source." }
 
-foreach ($must in @('.secrets', '.raw', '.output', 'output', 'data', 'src')) {
-    $s = Join-Path $src $must
-    if (Test-Path $s) {
-        if (Test-Path (Join-Path $dst $must)) { Ok "carried over: $must" }
-        else { Warn "MISSING in archive: $must" }
-    }
-}
+$missing = Test-ProjectCarriedOver -Source $src -Dest $dst
+if ($missing -gt 0) { Fail "$missing expected folder(s) missing from the archive — do NOT remove the source." }
 
 # --- Remove source (explicit, last) --------------------------------------
 if ($RemoveSource) {
@@ -151,3 +129,7 @@ if ($RemoveSource) {
     Write-Host "Source left in place. When you are satisfied with the archive:" -ForegroundColor Cyan
     Write-Host "  .\retire-project.ps1 -Project $Project -RemoveSource"
 }
+
+# Explicit: robocopy exits 1 for "files copied", which would otherwise leak out
+# as this script's exit code and read as a failure.
+exit 0
