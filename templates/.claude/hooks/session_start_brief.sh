@@ -8,6 +8,25 @@
 set -euo pipefail
 cd "$CLAUDE_PROJECT_DIR"
 
+# --- Unfilled scaffolding check -------------------------------------------
+# Three live projects shipped with __YOUR_LINTER__ still in their permission
+# allow-lists, so uv/ruff/pytest were never actually allowlisted and prompted
+# on every call for weeks. Nag every session until the placeholders are gone.
+PLACEHOLDERS="$(grep -rlE '\{\{[A-Z_]+\}\}|__YOUR_[A-Z_]+__' \
+  --include='*.md' --include='*.json' --include='*.sh' --include='*.yml' \
+  --exclude-dir=.git --exclude-dir=.venv --exclude-dir=node_modules \
+  . 2>/dev/null | head -20 || true)"
+
+if [ -n "$PLACEHOLDERS" ]; then
+  echo "=== ⚠ UNFILLED TEMPLATE PLACEHOLDERS ==="
+  echo "These files still contain {{...}} or __YOUR_...__ tokens:"
+  echo "$PLACEHOLDERS" | sed 's/^/  /'
+  echo ""
+  echo "If .claude/settings.json is listed, this project's tool permissions are"
+  echo "DEAD — every uv/ruff/pytest call prompts. Fix before other work."
+  echo ""
+fi
+
 if [ -f PLAN.md ]; then
   echo "=== Current PLAN.md ==="
   cat PLAN.md
