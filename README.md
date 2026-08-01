@@ -12,6 +12,7 @@ project-kit/
 ├── new-project.ps1         # Windows bootstrap (run once in an empty folder)
 ├── new-project.sh          # bash/WSL/mac/Linux bootstrap
 ├── sync-skills.ps1         # push canonical kit skills out to live projects
+├── retire-project.ps1      # archive a finished project to Drive (see /retire skill)
 ├── lessons/                # notes rescued from retired projects
 └── templates/              # Files copied into each new project
     ├── CLAUDE.md            # Persistent instructions (with {{PLACEHOLDERS}})
@@ -72,6 +73,22 @@ motivated it. `/advisor` audits projects against it.
 To add one: say **"enshrine X"** in any session. It gets generalized, written
 up with its motivating failure, and fanned out. A pattern with no recorded
 failure is a style opinion — it stays out.
+
+## Retiring a finished project
+`/retire <project>` (skill) drives `retire-project.ps1`: archives the project
+to `G:\My Drive\_projects\<name>` as a **runnable working copy** — source,
+data, config, plus `.secrets`, `.raw`, `.output` — excluding everything
+recreatable (`.git`, `.claude`, `.venv`, caches, build output).
+
+Always dry-runs first. It blocks on uncommitted changes, a missing git remote,
+or unpushed commits, because `.git` is excluded on purpose: history stays with
+the remote, so no remote means archiving would destroy it rather than relocate
+it. Copy and source-removal are separate steps; removal asks you to type the
+project name.
+
+After removal the skill updates every registry that named the project
+(CLAUDE.md, PORTS.md, `$Projects` in sync-skills.ps1) — skipping that is how
+phantom projects survive for months.
 
 ## The core conventions this kit enforces
 - spec.md is append-only `## Feature N` sections; no manual "Core" section —
