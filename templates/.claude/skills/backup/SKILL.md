@@ -61,7 +61,7 @@ point of backing the current state up.
 ...\backup-project.ps1 -Project <name> -Apply
 ```
 
-Read back the `carried over:` lines for `.secrets`, `.raw`, `.output`, `data`,
+Read back the `carried over:` lines for `.secrets`, `raw`, `output`, `data`,
 `src`, `config`, `static`, `.git`. Any `MISSING in copy:` line is a real
 problem — report it, do not paper over it.
 
@@ -79,7 +79,7 @@ that was deleted from the workspace deliberately.
 ## What travels
 
 Everything the project needs to run and its history: source, data, config,
-docs, `.git`, and deliberately `.secrets`, `.raw`, `.output` / `output`.
+docs, `.git`, and deliberately `.secrets`, `raw`, `output`.
 
 Excluded (recreatable or machine-local): `.claude`, `.venv`, `venv`,
 `__pycache__`, `.pytest_cache`, `.ruff_cache`, `.mypy_cache`, `node_modules`,

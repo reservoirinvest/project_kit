@@ -26,7 +26,7 @@ echo "Copying project templates into $TARGET ..."
 cp -r "$KIT_ROOT"/templates/. "$TARGET"/
 
 # Folder stubs
-for d in src tests data .raw; do
+for d in src tests data raw; do
   mkdir -p "$d"
   [ -f "$d/.gitkeep" ] || touch "$d/.gitkeep"
 done

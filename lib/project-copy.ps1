@@ -65,7 +65,7 @@ function Test-ProjectCarriedOver {
         [Parameter(Mandatory = $true)][string]$Dest,
         [switch]$IncludeGit
     )
-    $must = @('.secrets', '.raw', '.output', 'output', 'data', 'src', 'config', 'static')
+    $must = @('.secrets', 'raw', 'output', 'data', 'src', 'config', 'static')
     if ($IncludeGit) { $must += '.git' }
     $missing = 0
     foreach ($m in $must) {

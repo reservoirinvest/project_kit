@@ -56,7 +56,7 @@ holds and when it was last written, then let him decide.
 ```
 
 Read the verification block back: archived file count and size, plus the
-`carried over:` lines for `.secrets`, `.raw`, `.output`, `output`, `data`,
+`carried over:` lines for `.secrets`, `raw`, `output`, `output`, `data`,
 `src`. Any `MISSING in archive:` line stops the workflow — report it and do
 not proceed to removal.
 
@@ -90,8 +90,8 @@ clone` the remote over it if history is wanted, `uv sync`).
 
 ## What travels and what does not
 
-Copied: source, data, config, docs, and deliberately `.secrets`, `.raw`,
-`.output` / `output` — the archive must be *runnable*, not just readable.
+Copied: source, data, config, docs, and deliberately `.secrets`, `raw`,
+`output` — the archive must be *runnable*, not just readable.
 
 Excluded (recreatable or machine-local): `.git`, `.claude`, `.venv`, `venv`,
 `__pycache__`, `.pytest_cache`, `.ruff_cache`, `.mypy_cache`, `node_modules`,

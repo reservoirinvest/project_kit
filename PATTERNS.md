@@ -314,6 +314,41 @@ colors are hardcoded hex that ignores your theme. Override them with tokens.
 
 ---
 
+## 9a. A leading dot means "special" — `canon`
+
+**A leading dot is reserved for things the OS, a tool, or the security model
+treats specially.** It is not a decoration for "keep this out of the way".
+
+Dotted, and only these: `.git`, `.claude`, `.venv`, `.secrets`, `.env`,
+`.gitignore`, `.driveignore`, tool caches (`.ruff_cache`, `.pytest_cache`).
+
+**Ordinary project folders are undotted**, even when git-ignored:
+
+| Use | Folder |
+|---|---|
+| Raw, non-regenerable project inputs | `raw/` |
+| Generated artifacts (exports, canvases) | `output/` |
+| Curated data | `data/` |
+| Source, tests, config, static assets | `src/ tests/ config/ static/` |
+
+Git-ignoring a folder is a `.gitignore` line, not a naming convention. Dotting
+it adds nothing and costs real attention: `.raw` and `.output` sat beside
+`.secrets` and `.env` in every listing, so a reader had to think about whether
+they were sensitive. They are not — `raw/` is only source material and
+`output/` is regenerable.
+
+The failure that motivated this: one project accumulated `.raw`, `.output` **and**
+`output` simultaneously, with two different generated artifacts split across the
+last two for no reason anyone could reconstruct. Nothing was broken, but nobody
+could tell which was which without reading the code, and the exporter's hide
+list had to name both.
+
+Renaming is cheap and mechanical, with one trap worth knowing: a blind
+find-replace of `.raw` → `raw` **corrupts minified JavaScript**, where `.raw` is
+a legitimate property access (`r.at(-1).raw.length` became `r.at(-1)raw.length`).
+Exclude `static/vendor/**` and generated artifacts from any such sweep, and
+re-run the test suite afterwards rather than trusting the diff.
+
 ## 10. Operational hygiene — `canon`
 
 - **Merge, never replace, on-disk data.** No bare `to_pickle()` over an

@@ -31,7 +31,7 @@ Write-Host "Copying project templates into $Target ..." -ForegroundColor Cyan
 Copy-Item -Recurse -Force "$KitRoot\templates\*" $Target
 
 # Make folder stubs
-$dirs = @("src", "tests", "data", ".raw")
+$dirs = @("src", "tests", "data", "raw")
 foreach ($d in $dirs) {
     if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d | Out-Null }
     if (-not (Test-Path "$d\.gitkeep")) { New-Item -ItemType File -Path "$d\.gitkeep" | Out-Null }

@@ -89,7 +89,7 @@ deletes at the destination — opt in only.
 ## Retiring a finished project
 `/retire <project>` (skill) drives `retire-project.ps1`: archives the project
 to `G:\My Drive\_projects\<name>` as a **runnable working copy** — source,
-data, config, plus `.secrets`, `.raw`, `.output` — excluding everything
+data, config, plus `.secrets`, `raw`, `output` — excluding everything
 recreatable (`.git`, `.claude`, `.venv`, caches, build output).
 
 Always dry-runs first. It blocks on uncommitted changes, a missing git remote,

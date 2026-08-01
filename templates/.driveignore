@@ -48,4 +48,4 @@
 #   __pycache__/, *.pyc
 #   .ruff_cache/, .pytest_cache/
 #   .claude/hooks.log
-#   .raw/ (local scratch for raw project inputs, not backed up)
+#   raw/ (local scratch for raw project inputs, not backed up)

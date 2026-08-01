@@ -8,7 +8,7 @@
 #                                                         # (only after a verified copy)
 #
 # What is copied: everything the project needs to run again from the archive —
-# source, data, config, docs, and deliberately `.secrets`, `.raw`, `.output`.
+# source, data, config, docs, and deliberately `.secrets`, `raw`, `output`.
 # Secrets are copied by robocopy at the file level; nothing reads their contents.
 #
 # What is NOT copied: recreatable or machine-local state — .git, .claude,
