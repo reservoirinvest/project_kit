@@ -88,15 +88,23 @@ deletes at the destination — opt in only.
 
 ## Retiring a finished project
 `/retire <project>` (skill) drives `retire-project.ps1`: archives the project
-to `G:\My Drive\_projects\<name>` as a **runnable working copy** — source,
-data, config, plus `.secrets`, `raw`, `output` — excluding everything
-recreatable (`.git`, `.claude`, `.venv`, caches, build output).
+to **`G:\My Drive\_projects\zArchive\<name>`** as a **runnable working copy** —
+source, data, config, plus `.secrets`, `raw`, `output` — excluding everything
+recreatable (`.claude`, `.venv`, caches, build output).
 
-Always dry-runs first. It blocks on uncommitted changes, a missing git remote,
-or unpushed commits, because `.git` is excluded on purpose: history stays with
-the remote, so no remote means archiving would destroy it rather than relocate
-it. Copy and source-removal are separate steps; removal asks you to type the
-project name.
+Retired projects go to `zArchive/`, not `_projects/`, because `/backup` writes
+*live* projects into `_projects/` — a retired folder beside them would read as
+live and the two could overwrite each other.
+
+`.git` travels only when it has to: if a remote already holds the history it is
+excluded and the archive is a clean working copy; if there is no remote, or
+commits that never reached one, `.git` is carried in and the archive becomes the
+copy of record. **A missing remote is a warning, not a blocker** — small
+projects (a deck builder, a one-off generator) never need a GitHub repo.
+
+Always dry-runs first. It blocks only on uncommitted changes and on an archive
+of that name already existing. Copy and source-removal are separate steps;
+removal asks you to type the project name.
 
 After removal the skill updates every registry that named the project
 (CLAUDE.md, PORTS.md, `$Projects` in sync-skills.ps1) — skipping that is how

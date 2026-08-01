@@ -11,13 +11,21 @@
 # source, data, config, docs, and deliberately `.secrets`, `raw`, `output`.
 # Secrets are copied by robocopy at the file level; nothing reads their contents.
 #
-# What is NOT copied: recreatable or machine-local state — .git, .claude,
-# .venv, __pycache__, .pytest_cache, .ruff_cache, .mypy_cache, node_modules,
-# build, dist, egg-info, notebook checkpoints, crash dumps.
+# What is NOT copied: recreatable or machine-local state — .claude, .venv,
+# __pycache__, .pytest_cache, .ruff_cache, .mypy_cache, node_modules, build,
+# dist, egg-info, notebook checkpoints, crash dumps.
 #
-# NOTE ON .git: the archive is a working copy, not a repo. History stays with
-# the git remote. If a project has NO remote, the script blocks — archiving it
-# would discard the entire history.
+# WHERE IT GOES: G:\My Drive\_projects\zArchive\<name>. Retired projects must
+# NOT sit beside live ones in _projects\ — /backup writes live projects there,
+# so a retired folder there would look live and could be overwritten by a
+# stale backup (or vice versa).
+#
+# NOTE ON .git: normally excluded, because the archive is a working copy and
+# history stays with the git remote. But when there is NO remote, or commits
+# that never reached one, .git is carried INTO the archive automatically — the
+# archive then holds the only copy of that history. A missing remote is
+# therefore a warning, not a block: plenty of small projects (a deck builder,
+# a one-off generator) never justify a GitHub repo.
 
 [CmdletBinding()]
 param(
@@ -26,7 +34,7 @@ param(
     [switch]$Force,
     [switch]$RemoveSource,
     [string]$SourceRoot = 'C:\Users\kashi\workspace\python',
-    [string]$DestRoot   = 'G:\My Drive\_projects'
+    [string]$DestRoot   = 'G:\My Drive\_projects\zArchive'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -46,7 +54,18 @@ Write-Host "  archive: $dst`n"
 
 # --- Pre-flight -----------------------------------------------------------
 if (-not (Test-Path $src)) { Fail "no such project: $src" }
-if (-not (Test-Path $DestRoot)) { Fail "archive root not reachable: $DestRoot (is Drive mounted?)" }
+if (-not (Test-Path $DestRoot)) {
+    if (-not (Test-Path (Split-Path $DestRoot -Parent))) {
+        Fail "archive root not reachable: $DestRoot (is Drive mounted?)"
+    }
+    New-Item -ItemType Directory -Force $DestRoot | Out-Null
+    Ok "created archive root: $DestRoot"
+}
+
+# History has to survive somewhere. If a remote holds it, the archive can be a
+# clean working copy. If not, the archive carries .git and becomes the copy of
+# record. Decided here, reported plainly, never silently.
+$carryGit = $false
 
 Push-Location $src
 try {
@@ -59,17 +78,20 @@ try {
 
         $remote = git remote 2>$null
         if (-not $remote) {
-            if (-not $Force) { Fail "no git remote — archiving drops all history. Add a remote and push, or pass -Force to archive anyway." }
-            Warn 'no git remote: history will be lost when the workspace copy is removed.'
+            # Not a blocker. Plenty of small projects never justify a remote.
+            $carryGit = $true
+            Warn 'no git remote — .git will be carried INTO the archive, which then holds the only copy of this history.'
         } else {
             $unpushed = git log --branches --not --remotes --oneline 2>$null
             if ($unpushed) {
-                if (-not $Force) { Fail "$(($unpushed | Measure-Object -Line).Lines) unpushed commit(s). Push first, or pass -Force." }
-                Warn 'unpushed commits: history beyond the remote will be lost.'
-            } else { Ok 'all commits pushed to remote' }
+                $carryGit = $true
+                Warn "$(($unpushed | Measure-Object -Line).Lines) unpushed commit(s) — .git will be carried INTO the archive so they are not lost."
+            } else {
+                Ok 'all commits pushed to remote — .git excluded, history stays with the remote'
+            }
         }
     } else {
-        Warn 'not a git repo — nothing to verify against a remote.'
+        Warn 'not a git repo — no history to preserve.'
     }
 } finally { Pop-Location }
 
@@ -89,9 +111,9 @@ if (Test-Path $dst) {
 }
 
 # --- Copy -----------------------------------------------------------------
-# No -IncludeGit: the archive is a working copy, history stays with the remote.
-# That is exactly why the pre-flight above refuses a project with no remote.
-$rc = Invoke-ProjectCopy -Source $src -Dest $dst -ListOnly:(-not $Apply)
+# $carryGit was decided in the pre-flight: excluded when a remote already holds
+# the history, included when nothing else does.
+$rc = Invoke-ProjectCopy -Source $src -Dest $dst -IncludeGit:$carryGit -ListOnly:(-not $Apply)
 if ($rc -ge 8) { Fail "robocopy failed with exit code $rc" }
 
 if (-not $Apply) {
@@ -107,8 +129,16 @@ $dstSize  = (Get-ChildItem $dst -Recurse -File -Force -ErrorAction SilentlyConti
 Write-Host ''
 Ok ("archived {0} files, {1:N1} MB -> {2}" -f $dstCount, $dstSize, $dst)
 
-$missing = Test-ProjectCarriedOver -Source $src -Dest $dst
+$missing = Test-ProjectCarriedOver -Source $src -Dest $dst -IncludeGit:$carryGit
 if ($missing -gt 0) { Fail "$missing expected folder(s) missing from the archive — do NOT remove the source." }
+
+# A live-project backup of the same name may still sit in _projects\ from
+# /backup. Once retired it is stale and looks live — flag it, never delete it
+# unasked.
+$liveBackup = Join-Path (Split-Path $DestRoot -Parent) $Project
+if ((Test-Path $liveBackup) -and ($liveBackup -ne $dst)) {
+    Warn "a live-project backup still sits at $liveBackup — stale now that this is retired; delete it once you are satisfied with the archive."
+}
 
 # --- Remove source (explicit, last) --------------------------------------
 if ($RemoveSource) {
