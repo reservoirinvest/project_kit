@@ -24,6 +24,16 @@ with an explicit "say the word and I'll do it" action.
 Orient from `PROGRESS.md`, `spec.md`, and `git log --oneline -30` first.
 Only open source files to verify a specific suspicion.
 
+## The standard you audit against
+
+`_project_kit/PATTERNS.md` is the canon — decided conventions, each with the
+failure that motivated it. **Read it before sweeping.** Report divergence from
+it as drift; do not re-derive good practice by inferring intent from whichever
+project currently looks best.
+
+If a project does something better than the canon, that is a promotion
+candidate — say so, and say what PATTERNS.md entry it would add or amend.
+
 ## Checklist — evaluate each and report only what's actionable
 
 1. **Kit promotion.** Anything built here twice, or built once but obviously
@@ -67,6 +77,11 @@ A single brief, boardroom register, no filler:
 - **Later / watch** — everything else worth a line.
 
 End by asking nothing; list the commands/edits you'd execute on approval.
+
+**Carry the brief forward.** When a later request builds on a sweep, re-read
+the sweep before re-planning. Regenerating steps from memory silently drops
+items — it has happened, and the dropped item was the one blocking everything
+else.
 
 ## Standing rules
 

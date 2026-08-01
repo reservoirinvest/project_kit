@@ -7,10 +7,12 @@ git/Drive separation.
 ## What's in here
 ```
 project-kit/
+├── PATTERNS.md            # THE CANON — decided conventions + why they exist
 ├── STARTUP_PROMPT.md      # Paste into Claude Code in a fresh folder (the centerpiece)
 ├── new-project.ps1         # Windows bootstrap (run once in an empty folder)
 ├── new-project.sh          # bash/WSL/mac/Linux bootstrap
 ├── sync-skills.ps1         # push canonical kit skills out to live projects
+├── lessons/                # notes rescued from retired projects
 └── templates/              # Files copied into each new project
     ├── CLAUDE.md            # Persistent instructions (with {{PLACEHOLDERS}})
     ├── PLAN.md / PROGRESS.md / ARCHITECTURE.md / DOMAIN.md / README.md / spec.md
@@ -60,6 +62,16 @@ check with `bash --version`. If bash isn't available, convert the four hook
 scripts to PowerShell (`.ps1`) and update the `command` paths in settings.json
 accordingly. The PreCompact BLOCK behavior depends on the hook returning a
 non-zero exit code, which both bash and PowerShell support.
+
+## PATTERNS.md — how to add to the canon
+`PATTERNS.md` holds the decided conventions (LLM provider layer, config
+layers, plug-and-play manifests, redact-at-data-layer, standalone export,
+feature-index generation, brand law), each recorded with the failure that
+motivated it. `/advisor` audits projects against it.
+
+To add one: say **"enshrine X"** in any session. It gets generalized, written
+up with its motivating failure, and fanned out. A pattern with no recorded
+failure is a style opinion — it stays out.
 
 ## The core conventions this kit enforces
 - spec.md is append-only `## Feature N` sections; no manual "Core" section —
