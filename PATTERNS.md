@@ -81,16 +81,60 @@ the test: `EDITABLE_KEYS ⊆ rendered config fields`.
 
 ### 1c. Follow-ups — `canon`
 
-Two different things, both capped at 5, **never conflated**:
+Three different things, **never conflated**:
 
-1. **Thread budget** — how many prior turns are carried as context.
-   `ASK_HISTORY_MAX`.
-2. **Suggested follow-up chips** — up to 5 model-generated next questions
-   rendered after each answer. `ASK_FOLLOWUPS_MAX`.
+| Cap | Meaning | Where enforced |
+|---|---|---|
+| follow-up budget (5) | how many turns the user may take | client |
+| history window (`[-8:]`) | how much thread reaches the model | server |
+| visible chips (2 of 5) | how many suggestion chips render | client |
 
-Both caps live in config and reach the frontend through `/api/config`.
+**Suggestion chips are generated on the same call**, not a second one: the
+system prompt ends with a contract asking the model to append
+`SUGGESTIONS: ["q1", …, "q5"]` on a final line, and the server splits it off.
+Generating 5 while showing 2 is not waste — the surplus is the cheapest part of
+the response and lets the client widen the row with no round-trip.
+
+Parsing must be defensive — `rfind` (a marker mentioned mid-answer must not
+truncate it), `re.DOTALL` (multi-line arrays), and a fallback to the raw text so
+a model that emits only the tail never produces a blank reply. Where the project
+redacts terms (§6), filter the suggestions too: a chip must never surface what
+the answer is forbidden to say.
+
+**An error does not decrement the follow-up budget** — a retry is free.
+
 **Never duplicate a cap as a constant in both Python and JS** — that pair
-drifts, and the comment saying "mirrors the other one" is the tell.
+drifts, and a comment saying "mirrors the other one" is the tell.
+
+### 1e. The Ask AI dock — `canon`
+
+Reference implementation: `templates/rkv-ask/` (extracted from tatasons).
+
+**Mount the dock on `<body>`, never inside the app's render tree.** A panel
+welded into a page region is wiped every time that region re-renders, which is
+how earlier versions silently lost the conversation on each tab switch. The
+dock owns its own state and DOM and is independent of the host's state machine.
+
+Construct: one state object · full `innerHTML` re-render on every transition ·
+re-bind handlers after each render · `data-ask-*` attribute wiring with
+`stopPropagation` · escape-then-re-introduce markdown (never `innerHTML` raw
+model output) · `pending` is a real message in the thread, not a separate
+spinner state · errors render as a bubble carrying the server's `detail`
+verbatim, leaving the thread alive.
+
+Layout invariants: only the thread scrolls, so head/controls/chips/composer
+never scroll away; the thread carries a `min-height` floor so the chips row
+cannot squeeze the answer to a sliver; the panel is absolute above a fixed
+launcher so it grows upward.
+
+**Where Ask can be opened per entity, show the grounding as a dismissible chip.**
+A silently-grounded answer is a stale-context bug waiting to happen: the user
+must be able to see what the answer is about, and clear it.
+
+Style it through an `--ask-*` token layer that each project maps once to its own
+palette. Do not re-theme by editing the component. Watch for palettes that
+invert a brand colour between light and dark (a token doubling as text colour
+goes *brighter* in dark mode) — the text sitting on the accent must flip with it.
 
 ### 1d. Provider lessons paid for in debugging — `canon`
 

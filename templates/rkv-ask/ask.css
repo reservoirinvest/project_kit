@@ -1,0 +1,350 @@
+/* ===========================================================================
+ * rkv-ask — canonical Ask AI dock.
+ * Extracted from tatasons (the reference implementation) and generalized.
+ * See PATTERNS.md §1 "LLM provider layer" and the README beside this file.
+ *
+ * TOKEN CONTRACT
+ * --------------
+ * This file references ONLY --ask-* variables so it can drop into any project
+ * regardless of its brand token names (--tcs-*, --brand-*, --rk-*, …). Each
+ * project maps them ONCE in its own stylesheet, e.g.:
+ *
+ *   :root {
+ *     --ask-accent:        var(--brand-primary);
+ *     --ask-accent-text:   #fff;
+ *     --ask-surface:       var(--card);
+ *     ...
+ *   }
+ *
+ * Do not add var() fallbacks here — a missing token is a bug to fix in the
+ * mapping, not to paper over at the call site (PATTERNS.md §9).
+ *
+ * LAYOUT INVARIANTS (do not "tidy" these away)
+ *   - #askDock is position:fixed; .ask-panel is absolute above it, so the fab
+ *     stays anchored and the panel grows upward off it.
+ *   - Only .ask-thread scrolls. Head, controls, chips and input never scroll
+ *     away.
+ *   - .ask-thread has a min-height floor so the chips row cannot squeeze the
+ *     answer to a sliver.
+ * ======================================================================== */
+
+#askDock {
+  position: fixed;
+  left: 22px;
+  bottom: 20px;
+  z-index: 80;
+  width: auto;
+  min-height: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+/* ---- closed state: the launcher ---------------------------------------- */
+.ask-fab {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1.5px solid var(--ask-accent);
+  background: var(--ask-accent);
+  color: var(--ask-accent-text);
+  box-shadow: 0 4px 16px var(--ask-shadow);
+  transition: filter .18s, transform .18s;
+}
+.ask-fab:hover { filter: brightness(.93); transform: translateY(-1px); }
+.ask-fab .ask-spark { font-size: 15px; }
+
+/* ---- panel ------------------------------------------------------------- */
+.ask-panel {
+  position: absolute;
+  left: 0;
+  bottom: 56px;
+  width: min(400px, calc(100vw - 44px));
+  max-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ask-surface);
+  color: var(--ask-text);
+  border: 1px solid var(--ask-border-strong);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px var(--ask-panel-shadow);
+  overflow: hidden;
+  animation: askIn .2s ease;
+}
+@keyframes askIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .ask-panel { animation: none; }
+  .ask-fab { transition: none; }
+}
+
+.ask-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--ask-border);
+}
+.ask-head .ask-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ask-link);
+  flex: 0 0 auto;
+}
+.ask-head .ask-model {
+  font-size: 11.5px;
+  font-family: inherit;
+  border: 1px solid var(--ask-border-strong);
+  background: var(--ask-surface-alt);
+  color: var(--ask-text);
+  border-radius: 7px;
+  padding: 4px 6px;
+  cursor: pointer;
+  margin-left: auto;
+}
+.ask-test {
+  flex: 0 0 auto;
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--ask-border-strong);
+  background: var(--ask-surface);
+  color: var(--ask-muted);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  font-family: inherit;
+}
+.ask-test:hover { border-color: var(--ask-accent); color: var(--ask-link); }
+.ask-test.ok  { border-color: var(--ask-accent); color: var(--ask-accent); }
+.ask-test.bad { border-color: var(--ask-warn); color: var(--ask-warn); }
+
+.ask-x {
+  flex: 0 0 auto;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--ask-border-strong);
+  background: var(--ask-surface);
+  color: var(--ask-text);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  font-family: inherit;
+}
+.ask-x:hover { border-color: var(--ask-accent); color: var(--ask-link); }
+
+.ask-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--ask-border);
+  font-size: 12px;
+  color: var(--ask-muted);
+}
+.ask-modes {
+  display: inline-flex;
+  border: 1px solid var(--ask-border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ask-mode {
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--ask-surface);
+  color: var(--ask-muted);
+  border: none;
+  font-family: inherit;
+}
+.ask-mode.on { background: var(--ask-accent); color: var(--ask-accent-text); }
+.ask-counter { margin-left: auto; }
+.ask-reset {
+  border: none;
+  background: transparent;
+  color: var(--ask-link);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0;
+}
+
+/* Context chip — shows what the dock is currently grounded on. Absent in a
+   single-context app; load-bearing where Ask can be opened per entity. */
+.ask-ctx {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--ask-hl);
+  color: var(--ask-link);
+  border: 1px solid var(--ask-border-strong);
+}
+.ask-ctx button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  font-family: inherit;
+}
+
+/* ---- thread ------------------------------------------------------------ */
+.ask-thread {
+  flex: 1;
+  min-height: 200px;      /* floor: chips row must not squeeze the answer */
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ask-empty {
+  font-size: 13px;
+  color: var(--ask-muted);
+  line-height: 1.5;
+  text-align: center;
+  padding: 18px 8px;
+}
+.ask-bubble {
+  font-size: 13.5px;
+  line-height: 1.5;
+  border-radius: 12px;
+  padding: 10px 13px;
+  max-width: 92%;
+}
+.ask-bubble.user {
+  align-self: flex-end;
+  background: var(--ask-accent);
+  color: var(--ask-accent-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  padding: 7px 13px;
+}
+.ask-bubble.bot {
+  align-self: flex-start;
+  background: var(--ask-surface-alt);
+  color: var(--ask-body);
+  border: 1px solid var(--ask-border);
+}
+.ask-bubble.pending {
+  align-self: flex-start;
+  background: var(--ask-surface-alt);
+  color: var(--ask-muted);
+  font-style: italic;
+}
+.ask-bubble.err {
+  align-self: flex-start;
+  background: var(--ask-hl);
+  color: var(--ask-warn);
+  border: 1px solid var(--ask-border);
+}
+.ask-bubble .ask-meta { margin-top: 6px; font-size: 10.5px; color: var(--ask-muted); }
+.ask-bubble-foot { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.ask-bubble-foot .ask-meta { margin-top: 0; }
+.ask-copy {
+  flex: 0 0 auto;
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1;
+  border: 1px solid var(--ask-border-strong);
+  background: var(--ask-surface);
+  color: var(--ask-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: all .15s;
+}
+.ask-copy:hover { border-color: var(--ask-accent); color: var(--ask-link); }
+.ask-copy.on { border-color: var(--ask-accent); color: var(--ask-accent); }
+
+/* ---- markdown ---------------------------------------------------------- */
+.ask-md p { margin: 0 0 7px; }
+.ask-md p:last-child { margin-bottom: 0; }
+.ask-md ul { margin: 4px 0 8px; padding-left: 18px; }
+.ask-md li { margin-bottom: 3px; }
+.ask-md .md-h { font-weight: 700; color: var(--ask-text); margin: 6px 0 4px; }
+.ask-md code {
+  background: var(--ask-hl);
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+.ask-md strong { color: var(--ask-text); }
+
+/* ---- suggestion chips -------------------------------------------------- */
+.ask-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 16px 12px; }
+.ask-chip {
+  font-size: 12px;
+  line-height: 1;
+  padding: 5px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid var(--ask-border-strong);
+  background: var(--ask-surface);
+  color: var(--ask-link);
+  font-family: inherit;
+  font-weight: 600;
+  transition: all .15s;
+}
+.ask-chip:hover {
+  border-color: var(--ask-accent);
+  background: var(--ask-accent);
+  color: var(--ask-accent-text);
+}
+
+/* ---- composer ---------------------------------------------------------- */
+.ask-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--ask-border);
+}
+.ask-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-family: inherit;
+  border: 1px solid var(--ask-border-strong);
+  background: var(--ask-surface-alt);
+  color: var(--ask-text);
+}
+.ask-input:focus { outline: none; border-color: var(--ask-accent); }
+.ask-input:disabled { opacity: .5; }
+.ask-send {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--ask-accent);
+  background: var(--ask-accent);
+  color: var(--ask-accent-text);
+  font-family: inherit;
+}
+.ask-send:hover { filter: brightness(.92); }
+.ask-send:disabled { opacity: .5; cursor: default; }
+.ask-exhausted {
+  font-size: 12px;
+  color: var(--ask-muted);
+  text-align: center;
+  padding: 4px 16px 12px;
+}
