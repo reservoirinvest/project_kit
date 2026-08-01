@@ -27,6 +27,50 @@ from (never re-scan src/) · `ARCHITECTURE.md` decisions only, ≤1 paragraph
 each. The PreCompact hook BLOCKS compaction if src/tests changed but
 PLAN.md/PROGRESS.md weren't updated.
 
+## Model routing
+Pick per feature (per task within a feature, if it's a mixed-complexity
+feature) and record it as a `**Model:**` line in that feature's spec.md
+section — see the `feature-build-loop` skill for when in the loop this
+happens. Tell the user explicitly when you think they should switch models,
+and why; never silently assume.
+
+| Task type | Recommended model |
+|-----------|-------------------|
+| Schema / on-disk format definition | Opus + Plan Mode |
+| New core abstraction (pluggable interface, provider pattern) | Opus + Plan Mode |
+| Multi-state model (e.g. pending → accepted → dismissed) | Opus + Plan Mode |
+| Feature-spanning algorithm / engine (weighting, scoring) | Sonnet + Plan Mode |
+| Standard API endpoints, read paths, aggregations | Sonnet |
+| UI components, modals, drill-down views | Sonnet |
+| Write API + validation (decisions pre-resolved in spec) | Sonnet |
+| CLI utility / checker (all checks enumerated in spec) | Sonnet |
+| Data curation / seed authoring | Sonnet |
+| Script entry point wiring (manifest + main function) | Sonnet |
+| Mechanical transcription (copy-paste data into seed format) | Haiku |
+| Genuinely stuck (mid + top models both failed) | Opus / Fable |
+
+Reserve Fable for genuinely stuck problems after both Sonnet and Opus have
+failed — it costs the most. Use Haiku only for trivial mechanical work, never
+for anything touching `src/core/` or a schema decision.
+
+## How this project is run
+The canonical command is **`uv run {{PROJECT_NAME}}`**, from the
+`[project.scripts]` entry in `pyproject.toml`. Wire it on first setup, before
+the first feature ships — retrofitting it means rewriting every command in
+every doc, and stale `python -m` invocations survive in files nobody reopens.
+
+- Never document `uv run python -m src.<module>`, `uvicorn ...` or a bare
+  `python` invocation as the primary way to run this. They are implementation
+  detail and they break the moment a module moves.
+- Subcommands and flags hang off that one command
+  (`uv run {{PROJECT_NAME}} --pptx`, `uv run {{PROJECT_NAME}} serve`), so
+  there is exactly one thing to remember and one place to document.
+- The entry point needs a real `[build-system]` and the project installed
+  (editable) — `uv sync` does that. Without it `uv run {{PROJECT_NAME}}` is
+  "command not found", which reads as a broken checkout.
+- `uv run pytest` / `uv run ruff check .` are the exceptions: those are tool
+  invocations, not this project's entry point.
+
 ## Dependency management
 - Source of truth: {{MANIFEST}} (managed by {{PKG_MANAGER}}).
 - After every dependency change regenerate the lock-free export

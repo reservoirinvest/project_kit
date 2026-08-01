@@ -10,6 +10,7 @@ project-kit/
 ├── STARTUP_PROMPT.md      # Paste into Claude Code in a fresh folder (the centerpiece)
 ├── new-project.ps1         # Windows bootstrap (run once in an empty folder)
 ├── new-project.sh          # bash/WSL/mac/Linux bootstrap
+├── sync-skills.ps1         # push canonical kit skills out to live projects
 └── templates/              # Files copied into each new project
     ├── CLAUDE.md            # Persistent instructions (with {{PLACEHOLDERS}})
     ├── PLAN.md / PROGRESS.md / ARCHITECTURE.md / DOMAIN.md / README.md / spec.md
@@ -41,6 +42,17 @@ project-kit/
    CLAUDE.md, README.md, and skills' `{{HEX}}` palette.
 5. Launch `claude`, paste STARTUP_PROMPT.md as your first message. Claude
    proposes a plan and asks permission before creating/initializing anything.
+
+## Keeping skills in sync
+`templates/.claude/skills/` is the single source of truth for kit skills. Improve
+a skill in the kit, then fan it out to the live projects it targets:
+```
+.\sync-skills.ps1            # report drift only (dry run)
+.\sync-skills.ps1 -Apply     # overwrite project copies with kit versions
+```
+Target projects are hardcoded in the script's `$Projects` list — update that list
+when adding/removing a project. If a project copy is AHEAD of the kit (improved
+in-project), the report shows DRIFT — diff and backport to the kit before `-Apply`.
 
 ## Windows hooks note
 The hooks are bash `.sh` scripts. They fire if Git Bash (or WSL) is on PATH —

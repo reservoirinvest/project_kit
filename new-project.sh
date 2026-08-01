@@ -26,10 +26,17 @@ echo "Copying project templates into $TARGET ..."
 cp -r "$KIT_ROOT"/templates/. "$TARGET"/
 
 # Folder stubs
-for d in src tests data; do
+for d in src tests data .raw; do
   mkdir -p "$d"
   [ -f "$d/.gitkeep" ] || touch "$d/.gitkeep"
 done
+
+# .secrets/.env holds real values (git-ignored); .env.example (copied from
+# templates/ above) is the git-tracked reference collaborators copy from.
+mkdir -p .secrets
+if [ ! -f .secrets/.env ] && [ -f .env.example ]; then
+  cp .env.example .secrets/.env
+fi
 
 # Make hook scripts executable
 chmod +x .claude/hooks/*.sh 2>/dev/null || true

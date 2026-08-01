@@ -31,10 +31,17 @@ Write-Host "Copying project templates into $Target ..." -ForegroundColor Cyan
 Copy-Item -Recurse -Force "$KitRoot\templates\*" $Target
 
 # Make folder stubs
-$dirs = @("src", "tests", "data")
+$dirs = @("src", "tests", "data", ".raw")
 foreach ($d in $dirs) {
     if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d | Out-Null }
     if (-not (Test-Path "$d\.gitkeep")) { New-Item -ItemType File -Path "$d\.gitkeep" | Out-Null }
+}
+
+# .secrets/.env holds real values (git-ignored); .env.example (copied from
+# templates/ above) is the git-tracked reference collaborators copy from.
+if (-not (Test-Path ".secrets")) { New-Item -ItemType Directory -Path ".secrets" | Out-Null }
+if ((-not (Test-Path ".secrets\.env")) -and (Test-Path ".env.example")) {
+    Copy-Item ".env.example" ".secrets\.env"
 }
 
 # --- 3. Hand off to Claude Code (permission-gated) ---

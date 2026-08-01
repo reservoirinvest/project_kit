@@ -15,6 +15,10 @@ Loose template per feature:
 - **First-run vs subsequent-run behavior** — if relevant
 - **Source(s)** — external dependencies
 - **Open questions** — your uncertainties (Claude flags its own too)
+- **Model:** which model to build this feature with (Haiku / Sonnet / Sonnet +
+  Plan Mode / Opus + Plan Mode / Fable) — see CLAUDE.md's "Model routing"
+  table. Claude fills this in per the `feature-build-loop` skill; flag if you'd
+  route it differently.
 
 ---
 

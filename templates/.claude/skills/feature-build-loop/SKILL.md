@@ -38,6 +38,9 @@ PROGRESS.md fall out of sync, so skipping is wasted effort anyway.
 
 6. **Test.** Write tests in tests/ mirroring src/ layout. Run
    `uv run pytest` and `uv run ruff check .` Both must pass before "done".
+   Then exercise the feature through the project's real entry point —
+   `uv run <folder-name> ...`, not `python -m` — so the command in the docs is
+   the command that was actually verified.
 
 7. **Update state files (the part the PreCompact hook enforces):**
    - PLAN.md: overwrite the current-feature section (current state only, not a log)

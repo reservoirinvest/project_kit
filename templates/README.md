@@ -8,10 +8,22 @@ Built feature-by-feature against `spec.md`.
 ```
 {{INSTALL_COMMAND}}
 ```
-For collaborators without {{PKG_MANAGER}}:
+This installs the project itself (editable), which is what puts the
+`{{PROJECT_NAME}}` command on the path. For collaborators without
+{{PKG_MANAGER}}:
 ```
 {{FALLBACK_INSTALL_COMMAND}}
 ```
+
+## Run
+```
+uv run {{PROJECT_NAME}}            # canonical entry point
+uv run {{PROJECT_NAME}} --help     # what it accepts
+```
+The command comes from `[project.scripts]` in `pyproject.toml`. Never document
+`uv run python -m src.<module>`, `uvicorn ...` or a raw `python` invocation as
+the primary way to run this — those are implementation detail, and they break
+the moment a module moves.
 
 ## Structure
 ```

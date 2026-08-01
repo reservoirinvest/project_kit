@@ -22,6 +22,9 @@ data/master/*.pickle
 data/**/*.csv
 data/**/*.parquet
 
+# --- Raw project inputs: not source, not regenerable, not for git history ---
+.raw/
+
 # --- OS / editor cruft ---
 .DS_Store
 Thumbs.db

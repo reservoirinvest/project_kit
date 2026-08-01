@@ -113,14 +113,41 @@ All colors as CSS variables in a single brand stylesheet, never inline hex, so
 re-theming is one file edit. Sharp geometry (border-radius 0), no gradients,
 no shadows unless I say otherwise. Brand palette: {{BRAND_PALETTE_OR_DEFAULT}}
 
+## The run command — wire this before the first feature
+`pyproject.toml` gets a `[project.scripts]` entry on first setup, so that
+**`uv run <folder-name>`** is the canonical way to run this project. Every
+subcommand and flag hangs off it, and it is the only invocation that appears
+in README.md, PLAN.md or any docstring.
+
+```toml
+[project.scripts]
+<folder-name> = "src.<entry-module>:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+```
+
+The `[build-system]` block is not optional: without it uv treats the project
+as virtual, never installs it, and `uv run <folder-name>` is "command not
+found". `uv sync` then installs it editable, so edits are picked up live.
+
+Never document `uv run python -m src.<module>`, `uvicorn ...` or a bare
+`python` call as the primary command — they are implementation detail and they
+break the moment a module moves. (`uv run pytest` / `uv run ruff` are fine:
+those are tools, not this project's entry point.)
+
+Do this at setup, not later. Retrofitting means rewriting every command in
+every doc, and the stale ones survive in files nobody reopens.
+
 ## Standing design principles to enforce every feature
 Idempotent data operations (safe to re-run), fail-loud-fail-typed (specific
 exceptions, not bare Exception), no hardcoded secrets or brand colors, treat
 caches as regenerable (never depend on a cache existing without a fetch path),
-keep the public contract between core and features explicit, and wire a
-`[project.scripts]` entry in `pyproject.toml` on first setup so `uv run
-<project-name>` is the canonical start command — never document a raw uvicorn
-or python invocation as primary.
+and keep the public contract between core and features explicit.
 
 ---
 
