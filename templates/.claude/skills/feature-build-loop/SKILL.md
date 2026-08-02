@@ -1,6 +1,6 @@
 # SKILL: feature-build-loop
 
-Trigger this whenever Kashi says "build Feature N", "start the next feature",
+Trigger this whenever the user says "build Feature N", "start the next feature",
 "implement spec Feature N", or points at a new `## Feature N` section in spec.md.
 
 This is the canonical loop. Follow it in order. Do not skip steps under
@@ -13,7 +13,7 @@ PROGRESS.md fall out of sync, so skipping is wasted effort anyway.
    heading in spec.md. Do NOT re-read earlier features — PROGRESS.md is the
    index of what already exists. Do NOT re-scan all of src/.
 
-2. **Core-vs-feature decision (your call, reported, not Kashi's to pre-specify).**
+2. **Core-vs-feature decision (your call, reported, not the user's to pre-specify).**
    Ask internally: would 2+ features plausibly need this? If yes → it goes in
    `src/core/` (shared logic) or `src/utils/` (pure helpers), named generically.
    If no → `src/features/<slug>/`. State the decision in your reply AND in the
@@ -23,7 +23,7 @@ PROGRESS.md fall out of sync, so skipping is wasted effort anyway.
    abstraction, has a multi-state model, has 2+ viable architectures, or makes
    an expensive-to-unwind decision (schema, on-disk format, public contract)
    → STOP and say: "This warrants Plan Mode because [reason]. Recommend the
-   top reasoning model for the planning session." Wait for Kashi. Start the
+   top reasoning model for the planning session." Wait for the user. Start the
    planning session from the `design-principles` skill's pattern catalogue —
    reuse a proven pattern before inventing one.
 

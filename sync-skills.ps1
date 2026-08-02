@@ -18,6 +18,14 @@ param(
 
 $Kit = Join-Path $PSScriptRoot 'templates\.claude\skills'
 
+# advisor / backup / retire are workspace-scoped — they operate on
+# C:\Users\kashi\workspace paths and already exist as user-level skills
+# (~/.claude/skills). Syncing them into a project would duplicate them
+# uselessly AND bake Kashi's name/absolute paths into that project's git
+# history — a real leak for client-skinned repos. Kit template copies stay as
+# documentation of record; they just don't fan out.
+$WorkspaceScoped = @('advisor', 'backup', 'retire')
+
 # Every project carrying kit skills must be listed here, or its copies drift
 # invisibly — kite held 5 skills unmanaged for weeks because it was missing.
 $Projects = @(
@@ -30,7 +38,7 @@ $Projects = @(
 if ($Skip.Count) { "Skipping: $($Skip -join ', ')`n" }
 
 $drift = 0
-foreach ($skillDir in Get-ChildItem $Kit -Directory) {
+foreach ($skillDir in Get-ChildItem $Kit -Directory | Where-Object { $_.Name -notin $WorkspaceScoped }) {
     $src = Join-Path $skillDir.FullName 'SKILL.md'
     foreach ($proj in $Projects) {
         $dst = Join-Path $proj ".claude\skills\$($skillDir.Name)\SKILL.md"
