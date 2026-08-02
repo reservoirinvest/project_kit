@@ -21,11 +21,13 @@
 # stale backup (or vice versa).
 #
 # NOTE ON .git: normally excluded, because the archive is a working copy and
-# history stays with the git remote. But when there is NO remote, or commits
-# that never reached one, .git is carried INTO the archive automatically — the
-# archive then holds the only copy of that history. A missing remote is
-# therefore a warning, not a block: plenty of small projects (a deck builder,
-# a one-off generator) never justify a GitHub repo.
+# history stays with the git remote. When there is NO remote, .git is carried
+# INTO the archive automatically — the archive then holds the only copy of
+# that history, and a missing remote is a warning, not a block (plenty of
+# small projects never justify a GitHub repo). When a remote EXISTS but has
+# unpushed commits, the script blocks and asks you to push first, rather than
+# silently falling back to carrying .git — pass -Force to archive with .git
+# carried if you deliberately want to skip pushing.
 
 [CmdletBinding()]
 param(
@@ -84,6 +86,12 @@ try {
         } else {
             $unpushed = git log --branches --not --remotes --oneline 2>$null
             if ($unpushed) {
+                # A remote exists and could hold this history — push it there
+                # instead of silently falling back to carrying .git. Only
+                # carry .git if the push itself fails (offline, auth, etc.).
+                if (-not $Force) {
+                    Fail "$(($unpushed | Measure-Object -Line).Lines) unpushed commit(s) on a repo with a remote. Push first (git push), or pass -Force to archive with .git carried instead."
+                }
                 $carryGit = $true
                 Warn "$(($unpushed | Measure-Object -Line).Lines) unpushed commit(s) — .git will be carried INTO the archive so they are not lost."
             } else {

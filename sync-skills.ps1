@@ -24,7 +24,6 @@ $Projects = @(
     'C:\Users\kashi\workspace\python\kite',
     'C:\Users\kashi\workspace\python\mktdb',
     'C:\Users\kashi\workspace\python\zp_scm',
-    'C:\Users\kashi\workspace\python\tatasons',
     'C:\Users\kashi\workspace\python\aidc'
 ) | Where-Object { (Split-Path $_ -Leaf) -notin $Skip -and (Test-Path $_) }
 
