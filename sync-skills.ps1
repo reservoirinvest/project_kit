@@ -31,19 +31,30 @@ $WorkspaceScoped = @('advisor', 'backup', 'retire')
 #
 # `Brand` is where that project serves brand.css from; projects disagree because
 # their static roots do. $null means "do not fan brand.css here":
-#   zp_scm — carries a deliberate Zuellig client livery, not the registry
 #   aidc   — its brand.css is still the TCS-derived theme, and its deck uses 15
 #            token names the RKV seed does not define (--surface-elevated,
 #            --cta-bg, --shadow-*, --radius-*, --brand-yellow, --status-orange).
 #            Overwriting would not re-skin it, it would break it. Migrating aidc
 #            onto the registry is its own feature.
 #   ibd    — frozen at tag ibd-frozen, read-only; not listed at all
+#   zp_scm — archived to zArchive/zp_scm (2026-08-02)
+#
+# `Ask` is where that project vendors the rkv-ask dock. $null means "this project
+# does not use it", and no directory is created:
+#   kite   — has a hand-written dock on its own tokens; it is the UPSTREAM this
+#            component was extracted from, so fanning the kit copy in would be
+#            backwards. Migrating kite onto the vendored component is its own
+#            feature.
+#   mktdb, aidc — no Ask AI feature.
 $Projects = @(
-    @{ Path = 'C:\Users\kashi\workspace\python\ibf';    Brand = 'static\brand.css' }
-    @{ Path = 'C:\Users\kashi\workspace\python\kite';   Brand = 'static\brand.css' }
-    @{ Path = 'C:\Users\kashi\workspace\python\mktdb';  Brand = 'static\css\brand.css' }
-    @{ Path = 'C:\Users\kashi\workspace\python\zp_scm'; Brand = $null }
-    @{ Path = 'C:\Users\kashi\workspace\python\aidc';   Brand = $null }
+    @{ Path = 'C:\Users\kashi\workspace\python\ibf'
+       Brand = 'static\brand.css';      Ask = 'static\vendor\rkv-ask' }
+    @{ Path = 'C:\Users\kashi\workspace\python\kite'
+       Brand = 'static\brand.css';      Ask = $null }
+    @{ Path = 'C:\Users\kashi\workspace\python\mktdb'
+       Brand = 'static\css\brand.css';  Ask = $null }
+    @{ Path = 'C:\Users\kashi\workspace\python\aidc'
+       Brand = $null;                   Ask = $null }
 ) | Where-Object { (Split-Path $_.Path -Leaf) -notin $Skip -and (Test-Path $_.Path) }
 
 if ($Skip.Count) { "Skipping: $($Skip -join ', ')`n" }
@@ -99,6 +110,34 @@ if (Test-Path $BrandSrc) {
         $projName = Split-Path $proj.Path -Leaf
         $dst = Join-Path $proj.Path $proj.Brand
         Sync-One $BrandSrc $dst "brand.css (asset)" $projName
+    }
+}
+
+# rkv-ask is a served COMPONENT, and until now nothing delivered it after
+# scaffold time: new-project.ps1 copies templates/* exactly once, at project
+# creation. That is how ibf's copy sat frozen at an Aug-1 snapshot while the kit
+# moved on, and it is why the whole "vendored but unused" failure in PATTERNS §1e
+# was able to go unnoticed for four features.
+#
+# ask.js and ask.css are byte-identical everywhere BY DESIGN — §1e forbids
+# re-theming by editing the component, so a project maps an --ask-* token layer
+# instead. That makes a hash mismatch here real drift, exactly like brand.css.
+#
+# llm_client.py is deliberately NOT fanned out. It is a starting point to copy
+# and adapt ("prune providers to what the project actually needs", per its own
+# docstring), not an asset to hold identical — ibf's copy is legitimately
+# rewritten async because the kit's is synchronous and calls asyncio.run() inside
+# ask(), which raises under a running loop. Hash-checking it would report
+# permanent DRIFT on a correct project, and a report that cries wolf gets ignored.
+$AskSrc = Join-Path $PSScriptRoot 'templates\rkv-ask'
+if (Test-Path $AskSrc) {
+    foreach ($file in Get-ChildItem $AskSrc -File |
+             Where-Object { $_.Name -in 'ask.js', 'ask.css', 'README.md' }) {
+        foreach ($proj in $Projects | Where-Object { $_.Ask }) {
+            $projName = Split-Path $proj.Path -Leaf
+            $dst = Join-Path $proj.Path (Join-Path $proj.Ask $file.Name)
+            Sync-One $file.FullName $dst "rkv-ask/$($file.Name)" $projName
+        }
     }
 }
 
