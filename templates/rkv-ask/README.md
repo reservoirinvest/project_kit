@@ -1,8 +1,32 @@
-# rkv-ask — canonical Ask AI dock
+# rkv-ask — canonical Ask AI dock + provider layer
 
-Extracted from `tatasons` (the reference implementation) and generalized.
-See `PATTERNS.md` §1. Copy `ask.css` + `ask.js` into the project's `static/`,
-map the tokens, add the backend contract below.
+Extracted from `tatasons` (frontend) and `kite` (backend — the small
+bottom-left dock with upward expansion, currently the cleanest live
+implementation) and generalized. See `PATTERNS.md` §1.
+
+**Copy all three files in, don't rebuild from memory:**
+- `ask.css` + `ask.js` → the project's `static/`, then map the tokens (§1).
+- `llm_client.py` → the project's `src/core/` (or `src/features/ask_ai/` if
+  the project uses the plug-and-play layout), rename `<PROJECT>` references,
+  prune to the providers actually needed.
+
+**If this folder is vendored into a repo (e.g. `static/vendor/rkv-ask/`),
+the feature's boot code must mount `#askDock` — a hand-built panel bolted
+onto a tab instead is a second, divergent UI, and the vendored copy sitting
+next to it unused is the tell.** This has already happened once: a project
+copied this directory in, then wrote its own inline question/answer panel
+from scratch anyway, producing a different UX from every other project and
+re-deciding (worse) answers to problems this dock had already solved
+(thread persistence across re-renders, markdown escaping, error bubbles that
+keep the thread alive). Grep for `#askDock` before writing any Ask AI
+frontend code — if this directory exists in the repo, wiring into it is not
+optional.
+
+The same applies to the backend: `llm_client.py` encodes two mistakes that
+have each cost debugging time on **two separate projects** so far because
+the second build didn't copy this file — see its module docstring (the
+Anthropic zero-balance trap, and the correct Gemini SDK package name). Start
+from it; don't reconstruct the provider registry from prose memory.
 
 ## Why a dock and not a bar
 
@@ -69,6 +93,35 @@ always see — and clear — what the answer is grounded on. **Never ground
 silently**; an invisible context is a stale-context bug waiting to happen.
 
 ## 3. Backend contract
+
+**Provider layer**: `llm_client.py` in this folder — `get_client(name)` and
+`provider_status()` back the two endpoints below. Don't reimplement the
+registry, retry, or model-pinning; copy the file and prune providers.
+
+**The two-endpoint rule** (PATTERNS.md §1a) — "a key is present" and "the key
+works" are different claims:
+
+```python
+@router.get("/providers")
+def providers() -> dict:
+    """Free, local, no provider contacted. Backs the Config panel's poll."""
+    return {"providers": provider_status(), "default": DEFAULT_PROVIDER}
+
+
+@router.post("/test")
+def test_provider(body: TestRequest | None = None) -> dict:
+    """One real round-trip. NEVER raises — every failure path, including a
+    bare Exception, returns {provider, ok: false, detail}. This is what
+    catches a key that is present, valid, and out of credit."""
+    name = (body.provider if body else None) or DEFAULT_PROVIDER
+    try:
+        client = get_client(name)
+        answer = client.ask("Answer with one word.", "Reply with: OK")
+    except Exception as exc:  # noqa: BLE001 - by design, see docstring
+        return {"provider": name, "ok": False, "detail": str(exc)}
+    return {"provider": name, "ok": True, "model_id": answer.model_id,
+            "reply": answer.text.strip()[:80]}
+```
 
 `AskResponse` must carry `suggestions`. The chips are produced by asking the
 model for a JSON tail and splitting it off — no second call, no extra cost:

@@ -218,7 +218,12 @@ def build(skin: str) -> dict[str, dict[str, str]]:
         c["text"] = tune(c["text"], fields, 7.0, dirn)
         c["text-secondary"] = tune(c["text-secondary"], fields, 4.5, dirn)
         c["text-muted"] = tune(c["text-muted"], fields, 4.5, dirn)
-        c["accent-text"] = tune(c["accent-text"], fields, 4.5, dirn)
+        # 7.0, not 4.5. `--accent-text` is not decoration: it renders the KPI
+        # headline figures and the active tab label, which are primary reading
+        # surfaces. At AA-secondary the indigo skin shipped 4.8:1 -- passing, and
+        # genuinely hard to read, because an accent shares its hue with the
+        # surface it sits on so lightness is the ONLY separation available.
+        c["accent-text"] = tune(c["accent-text"], fields, 7.0, dirn)
         # A boundary is a UI component under WCAG 1.4.11 -> 3:1, not 4.5. The
         # original seed shipped 1.97:1 here, which is why inputs and card edges
         # were hard to place on a bright screen.

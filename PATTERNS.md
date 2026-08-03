@@ -24,6 +24,12 @@ providers needs no restart.
 **Pin explicit model IDs.** Never `*-latest` or `*-preview` — they reroute
 silently, sometimes into a different quota bucket, with no log signal.
 
+**The Gemini SDK is `google-genai` (`from google import genai`), not the older,
+deprecated `google-generativeai`.** They are separate PyPI packages with
+different import paths. The older name is what tutorials and training data
+still reach for by habit — pin `google-genai>=1.0` in the dependency extra so
+a fresh build can't quietly reintroduce it.
+
 **Missing key fails at construction**, typed: `LLMUnavailable(f"{env_key} is
 not set — {hint}")`, a `RuntimeError` subclass, surfaced as HTTP 503. The hint
 must be actionable (`"add it to .secrets/.env"`, ``"run `claude setup-token`"``).
@@ -60,6 +66,20 @@ endpoint that tells you nothing on the day it matters.
 > having a zero credit balance. Key-presence checks said green. Only a real
 > round-trip found it. That provider was then *removed from the menu* rather
 > than left as a guaranteed-broken entry.
+
+> **This recurred on the very next project.** kite paid for the discovery
+> above and excluded a plain Anthropic API-key provider from its registry
+> entirely, reaching Claude only via the OAuth-billed `CLAUDE_CODE_OAUTH_TOKEN`
+> path. ibf's Ask AI build re-added a metered `anthropic` provider from
+> scratch, rediscovered the identical zero-balance failure via its own
+> `/api/ask/test`, wrote it down as a debugging note — and then left the
+> provider selectable anyway. **Removing a proven-broken provider from the
+> menu is a one-line prose rule that does not survive being re-derived from
+> memory each time.** The fix is structural, not another reminder: the
+> reference registry shipped in `templates/rkv-ask/llm_client.py` excludes
+> the metered Anthropic client by default, with the reason in its docstring —
+> copying the file inherits the correct default instead of reinventing the
+> broken one.
 
 ### 1b. Ask AI config surface — `canon`
 
@@ -108,7 +128,21 @@ drifts, and a comment saying "mirrors the other one" is the tell.
 
 ### 1e. The Ask AI dock — `canon`
 
-Reference implementation: `templates/rkv-ask/` (extracted from tatasons).
+Reference implementation: `templates/rkv-ask/` (frontend extracted from
+tatasons, backend provider layer from kite — currently the cleanest live copy
+of both). `new-project.ps1` copies this folder into every scaffolded project;
+**use it, don't rebuild it.**
+
+> **Recorded failure: vendored but unused.** ibf's repo has
+> `static/vendor/rkv-ask/ask.css` + `ask.js` sitting in it, copied in exactly
+> as intended — and its actual Ask AI feature is a hand-built inline
+> question/answer panel in a tab that never references either file. The dock
+> was available and simply wasn't wired in, so ibf shipped a different UX
+> from kite (no floating launcher, no thread persistence across re-renders,
+> no markdown rendering) while paying none of this pattern's already-solved
+> problems back. **If `static/vendor/rkv-ask/` (or an equivalent copy) exists
+> in the repo, the feature's boot code must mount `#askDock`** — grep for that
+> id before writing any Ask AI frontend code at all.
 
 **Mount the dock on `<body>`, never inside the app's render tree.** A panel
 welded into a page region is wiped every time that region re-renders, which is

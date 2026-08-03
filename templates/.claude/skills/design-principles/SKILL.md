@@ -40,6 +40,41 @@ without a restart. Adding a provider = one subclass, one factory branch, one
 allow-list entry (validated → typed 422 otherwise). SDKs imported lazily
 inside the subclass.
 
+### 2.1a Ask AI: copy the reference, don't rebuild it
+Full pattern + rationale: `PATTERNS.md` §1 in the kit repo (not copied into
+this project — read it there before designing anything below from scratch).
+Reference implementation, copied into this project at scaffold time:
+**`rkv-ask/` in this project's own tree** (`ask.css` + `ask.js` for the dock,
+`llm_client.py` for the provider layer). Use them; do not reconstruct either
+from memory — two mistakes below have each cost real debugging time twice
+across different projects because the second build didn't start from the
+copy already sitting in the repo.
+
+- **Pin every model ID explicitly** — never `*-latest`/`*-preview`.
+- **The Gemini SDK is `google-genai` (`from google import genai`)**, not the
+  older, deprecated `google-generativeai`. Different PyPI package, different
+  import path; the old name is what habit and training data reach for.
+- **No plain metered-API-key Anthropic provider.** `ANTHROPIC_API_KEY` on
+  this machine is valid but has a zero credit balance — proven by
+  `POST /api/ask/test`, not assumed. Reach Claude via
+  `CLAUDE_CODE_OAUTH_TOKEN` (`ClaudeOAuthClient` in `llm_client.py`) instead.
+  A provider that fails its own live test gets **deleted from the registry**,
+  not left selectable with a disabled button — "configured" and "actually
+  works" are different claims (the two-endpoint rule below), and only
+  removal stops it from being rediscovered by hand a third time.
+- **Ship both endpoints, never just one:** `GET /.../providers` (free,
+  key-presence only) and `POST /.../test` (one real round-trip, **never
+  raises** — every failure path returns `{provider, ok: false, detail}`).
+  Key-presence checks alone said green while a real credential was out of
+  credit; only the round-trip caught it.
+- **Mount the copied dock at `#askDock`; do not hand-build an inline
+  panel.** A repo with `rkv-ask/` (or `static/vendor/rkv-ask/`) sitting
+  unused next to a separately-written Q&A tab is the recorded failure mode —
+  it produces a different UX per project and re-solves problems (thread
+  persistence across re-renders, markdown escaping, error bubbles that keep
+  the thread alive) the dock already handles. Grep for `#askDock` before
+  writing any Ask AI frontend code.
+
 ### 2.2 Two-track AI writes: insights vs recommendations
 An automated scan **never mutates an entity directly**:
 - **Insights** — read-only observations (url/title/summary), auto-saved,
@@ -122,6 +157,47 @@ child/join rows. Rule: **every new write path adds a check here.**
   test client into `window.__DATA__`, add a fetch shim + asset rewriter in a
   head bootstrap so the main JS runs **unchanged**; hide server-only UI with
   injected CSS. One template serves embedded (iframe) and standalone.
+
+### 2.13 Data tables
+A grid dense enough to be worth building is dense enough to need all of this.
+
+- **Column definitions are the single source of truth** — label, alignment,
+  formatter, sort key and tooltip in one object, and the renderer reads only
+  that. A column then *cannot* be added without its tooltip, because there is
+  nowhere else to put one. Numbers that are estimates or sign conventions get
+  trusted the moment they are unlabelled.
+- **Full-screen toggle on any grid that scrolls.** Target the panel, never the
+  bare table: the heading and caption carry the caveats. Drop the row cap in
+  full screen (`max-height: none; flex: 1; min-height: 0`) and style
+  `::backdrop`, or the browser paints black behind a light-theme page. Share
+  one `toggle`/`button` module across panels — the second copy is where the
+  two diverge.
+- **Sticky header** under any vertical scroll, or sorting a long grid means
+  scrolling back up to find out what a column was.
+- **Blank is not zero.** Render missing as an em-dash. "No greek yet" and
+  "delta is zero" are different facts and must never look the same.
+- **A non-live number carries its provenance** — which source won, in the cell
+  or its tooltip. A stale number is only safe because it is labelled.
+- **Filters search the RENDERED text, not the stored value.** A store holding
+  `20260805` and a grid showing `05-Aug-2026` means typing what is on screen
+  matches nothing. Put both forms in the haystack. This one ships broken and
+  stays broken, because the developer tests it with the stored value.
+
+### 2.14 Long-running work reports progress
+Anything over ~2 s says what it is doing, wherever it is running from.
+
+- **One protocol, two renderers.** A single progress interface
+  (`task(name, total)` → `advance()`) with a terminal sink and a
+  browser/SSE sink. Two independent implementations drift, and the one nobody
+  watches is the one that lies.
+- **Determinate where the total is known**, named phases where it is not.
+  A spinner that cannot say "3 of 47" when it knows is withholding.
+- **Never a silent pause.** A gap with no output is indistinguishable from a
+  hang, and the user's next move is to kill it — usually mid-write.
+- **Report what was skipped.** Bounded work (top-N, no-retry, sampling) that
+  does not say what it dropped reads as full coverage.
+- **Progress is not logging.** It goes to the operator; failures still go to
+  the log with their typed exception.
 
 ---
 
