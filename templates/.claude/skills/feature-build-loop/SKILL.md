@@ -49,14 +49,40 @@ PROGRESS.md fall out of sync, so skipping is wasted effort anyway.
    - ARCHITECTURE.md: ONLY if a real design decision was made this cycle,
      and ≤1 paragraph per decision (what was decided, why, what was
      rejected). Implementation narrative goes in PROGRESS.md, not here.
-   - README.md: ONLY if entrypoints / setup changed
+   - README.md: **every feature, no exception — see step 8**
 
-8. **Design-principle flag (2-3 lines max).** Note any risk: tight coupling,
+8. **README pass. Not conditional.** README is the only doc a human reads to
+   *operate* the thing, so it goes stale faster than any other and is the one
+   nobody notices is wrong. Open it every cycle and read the sections your
+   feature touched. Two questions, and only the second one is optional to act on:
+
+   1. **Does anything README now asserts contradict what shipped?** A wrong
+      README is worse than a thin one — it is confidently wrong at the moment
+      someone is trusting it. Fix every contradiction, always.
+   2. Is there a new capability, command, flag, safety gate or failure mode a
+      user would need to know about? Add it where they would look for it.
+
+   **The trap this replaces:** the rule used to read "ONLY if entrypoints /
+   setup changed", which invites grepping for one keyword, finding nothing, and
+   concluding the file is fine. It is not the same question. A feature that adds
+   no command at all still changes what the app *does*, and README describes
+   behaviour far more than it describes setup. Real miss: a project shipped a
+   seventh candidate table and a sixth placement gate while README still
+   described six tables and no gates — entry points had not changed once.
+
+   **When README grows past ~250 lines, split it** into an *Operating* half
+   (setup, commands, what each screen does, safety gates) and a *Design notes*
+   half (why it is the way it is). Anything that is neither — the history of a
+   feature that was removed, an obituary for an archived tab — belongs in
+   PROGRESS.md and should be deleted here. Keep the one operating fact such a
+   paragraph was carrying and drop the story around it.
+
+9. **Design-principle flag (2-3 lines max).** Note any risk: tight coupling,
    missing error boundary, untested edge, spec drift. Flag, don't lecture.
 
-9. **Commit.** `git add -A && git commit -m "feat(feature-N): <summary>"`
+10. **Commit.** `git add -A && git commit -m "feat(feature-N): <summary>"`
 
-10. **Compaction nudge.** If context feels heavy AND the feature is fully
+11. **Compaction nudge.** If context feels heavy AND the feature is fully
     committed: "Feature N committed, state files synced — good point to
     /compact before Feature N+1." Never nudge mid-feature or before tests pass.
 
