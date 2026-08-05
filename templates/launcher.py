@@ -2,13 +2,17 @@
 
 Two problems this solves for every workspace dashboard.
 
-**Browser** — `webbrowser.open()` hands the URL to the Windows default handler.
-When that default is a Chromium fork that errors on a cold `--new-tab` launch
-(Thorium, in this workspace), the dashboard starts fine but the window never
-appears. So we pick an explicitly-known-good browser instead: `DASH_BROWSER`
-if set, else the first of Brave / Chrome / Edge actually installed, and only
-then fall back to the OS default. Opening the browser must never take the
-server down, so every failure here degrades to "print the URL".
+**Browser** — `webbrowser.open()` hands the URL to the Windows default
+handler, which errors on a cold launch when the default is a Chromium fork
+(Thorium, in this workspace). So the exe is launched *directly* with the URL
+as an argument, which does not hit that failure: `DASH_BROWSER` if set, else
+the first of Thorium / Brave / Chrome / Edge actually installed, and only then
+the OS default. Thorium leads because it is the user's daily browser — the
+workspace browser rule is that terminal-driven `uv run` opens there, while
+Claude's test instances use `DASH_BROWSER=chrome` with `?test=TestN-<app>` in
+the URL (the app sets the tab title from it) and are closed after testing.
+Opening the browser must never take the server down, so every failure here
+degrades to "print the URL".
 
 **Port** — each app owns one port from the workspace registry (`PORTS.md` at
 the workspace root) and reads a per-app env var so a stale process squatting
@@ -26,9 +30,19 @@ import time
 import webbrowser
 from pathlib import Path
 
-# Preference order, first installed wins. Deliberately excludes Thorium: it is
-# the machine default and the one that fails to launch from a cold URL open.
+# Preference order, first installed wins. Thorium leads: it is the user's
+# daily browser, and the historical failure ("errors on a cold URL launch")
+# was specific to handing the URL to the *Windows default handler* — launching
+# the exe directly with the URL as an argument does not hit it. The browser
+# rule (workspace CLAUDE.md): terminal-driven `uv run` opens Thorium; Chrome
+# is reserved for Claude's test instances (`DASH_BROWSER=chrome`,
+# `?test=TestN-<app>` in the URL so the tab is identifiable and closable).
 _BROWSERS: dict[str, tuple[str, ...]] = {
+    "thorium": (
+        r"~\AppData\Local\Thorium\Application\thorium.exe",
+        r"C:\Program Files\Thorium\Application\thorium.exe",
+        "thorium",
+    ),
     "brave": (
         r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
         r"C:\Program Files (x86)\BraveSoftware\Brave-Browser\Application\brave.exe",
@@ -50,7 +64,7 @@ _BROWSERS: dict[str, tuple[str, ...]] = {
     ),
 }
 
-_PREFERENCE = ("brave", "chrome", "edge")
+_PREFERENCE = ("thorium", "brave", "chrome", "edge")
 
 
 def _resolve(candidate: str) -> str | None:
