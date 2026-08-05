@@ -80,6 +80,19 @@ def _resolve(candidate: str) -> str | None:
     return None
 
 
+# "Don't open anything." Distinct from `default` (which means "let the OS
+# handle it") and from an unresolvable value (which falls back). It exists
+# because there was no way to say it: `DASH_BROWSER=none` was treated as a
+# browser NAME, failed to resolve, and fell back through the preference order
+# into Thorium — opening the user's daily browser from an automated test run,
+# which is the one thing the browser rule forbids.
+_SUPPRESS = {"none", "off", "no", "0", "false"}
+
+
+def browser_suppressed() -> bool:
+    return os.environ.get("DASH_BROWSER", "").strip().lower() in _SUPPRESS
+
+
 def find_browser() -> tuple[str, str] | None:
     """`(name, exe_path)` of the browser to use, or None to mean "no known
     browser installed — let the OS default handle it". `DASH_BROWSER` (a name
@@ -104,6 +117,9 @@ def open_url(url: str) -> None:
     """Open `url`, preferring a known-good browser. Never raises — a browser
     that refuses to start must not stop the server that already bound the
     port; the URL is printed so the user can click it themselves."""
+    if browser_suppressed():
+        print(f"[launcher] browser suppressed (DASH_BROWSER) — open {url} yourself")
+        return
     choice = find_browser()
     if choice is not None:
         name, exe = choice
