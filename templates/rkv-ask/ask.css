@@ -287,6 +287,30 @@
 }
 .ask-md strong { color: var(--ask-text); }
 
+/* A model's table is routinely wider than .ask-panel's 400px cap — the wrap
+   scrolls horizontally so the table itself never forces the panel wider or
+   gets squeezed into a wrapped, unreadable mess. */
+.ask-md .ask-table-wrap {
+  overflow-x: auto;
+  margin: 4px 0 8px;
+  max-width: 100%;
+}
+.ask-md table {
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ask-md th, .ask-md td {
+  padding: 4px 9px;
+  border: 1px solid var(--ask-border);
+  text-align: left;
+}
+.ask-md th {
+  background: var(--ask-hl);
+  color: var(--ask-text);
+  font-weight: 700;
+}
+
 /* ---- suggestion chips -------------------------------------------------- */
 .ask-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 16px 12px; }
 .ask-chip {

@@ -27,6 +27,26 @@ older `google-generativeai` package.** They are different PyPI distributions
 with different import paths; the old one is deprecated but still turns up in
 older tutorials and training data. `pyproject.toml`'s `ai` extra must pin
 `google-genai>=1.0`.
+
+**`AutoClient` is the one deliberate exception to "a missing key or failure
+raises immediately."** Every concrete provider above fails loudly and never
+silently substitutes a model the user didn't pick — an answer from the wrong
+model is worse than an error. Picking `auto` is the explicit, informed
+opt-in to that trade: it walks Claude → Gemini → DeepSeek →
+`OpenRouterFreeClient` in cost order and returns whichever answers.
+`OpenRouterFreeClient` reaches OpenRouter's genuinely-$0 `:free` model
+catalog — separate compute from Gemini/DeepSeek's own quotas, no OpenRouter
+balance required — and is deliberately **not** in `_PROVIDERS`: it only
+exists as `AutoClient`'s last fallback link, never independently selectable.
+Do not add OpenRouter BYOK (linking your own Gemini/DeepSeek key into
+OpenRouter) as a way to add headroom — it bills the same linked key/quota, so
+it cannot add capacity beyond what the direct provider already offers; it's
+a routing convenience only. The `:free` roster rotates as OpenRouter's
+provider deals change — reverify `OPENROUTER_MODELS`'s default against
+`openrouter.ai/models?max_price=0` periodically, don't assume the pinned
+slugs stay valid indefinitely (they are pinned exact slugs, never `:auto` or
+unversioned, per the model-ID rule — just pinned to a moving target that
+needs an occasional recheck, unlike Gemini/DeepSeek/Claude's stable ids).
 """
 
 from __future__ import annotations
@@ -46,7 +66,11 @@ _RETRY_BACKOFF = (2.0, 5.0)
 _TRANSIENT_STATUSES = frozenset({429, 500, 502, 503, 504})
 _TRANSIENT_TOKENS = ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "overloaded")
 
-DEFAULT_PROVIDER = "gemini"
+DEFAULT_PROVIDER = "auto"
+
+# Verify against openrouter.ai/models?max_price=0 before relying on this —
+# the free roster rotates. Confirmed live 2026-08-08.
+_FREE_MODELS = "inclusionai/ling-3.0-tiny:free,cohere/north-mini-code:free"
 
 
 class LLMUnavailable(RuntimeError):
@@ -342,20 +366,139 @@ class ClaudeOAuthClient(LLMClient):
         )
 
 
+class OpenRouterFreeClient(LLMClient):
+    """OpenRouter's $0 free-tier catalog. Never independently selectable —
+    only `AutoClient` reaches this, as its last fallback link. Sends the
+    model list as OpenRouter's native `models` fallback array in ONE
+    request, so a rate-limited free model is retried server-side without an
+    extra round trip. See the module docstring before touching
+    `_FREE_MODELS` or adding this to `_PROVIDERS`."""
+
+    name = "openrouter"
+    supports_web = False
+    _MODEL = _FREE_MODELS.split(",")[0]
+
+    def __init__(self) -> None:
+        self._key = self._require(
+            "OPENROUTER_API_KEY",
+            "add it to .secrets/.env — free signup at openrouter.ai, "
+            "no top-up needed for :free models",
+        )
+
+    @property
+    def model_id(self) -> str:
+        return self._MODEL
+
+    def _chain(self) -> list[str]:
+        raw = os.environ.get("OPENROUTER_MODELS", _FREE_MODELS)
+        return [m.strip() for m in raw.split(",") if m.strip()]
+
+    def ask(self, system: str, user: str, web: bool = False) -> Answer:
+        import httpx
+
+        chain = self._chain()
+        try:
+            response = httpx.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {self._key}"},
+                json={
+                    "model": chain[0],
+                    "models": chain,
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                },
+                timeout=120.0,
+            )
+        except httpx.HTTPError as exc:
+            raise LLMUnavailable(f"openrouter: {exc}") from exc
+        if response.status_code >= 400:
+            raise LLMUnavailable(
+                f"openrouter: HTTP {response.status_code} {response.text[:200]}"
+            )
+        body = response.json()
+        # A 200 can still carry an embedded "error" object (e.g. an
+        # exhausted/misconfigured account) instead of a 4xx — the same trap
+        # as the zero-balance Anthropic key above. Must be checked
+        # explicitly, or a failure reads as a valid answer.
+        if "error" in body:
+            raise LLMUnavailable(f"openrouter: {body['error'].get('message', body['error'])}")
+        choices = body.get("choices") or []
+        if not choices:
+            raise LLMUnavailable("openrouter: no choices in response")
+        return Answer(
+            text=choices[0]["message"]["content"] or "",
+            provider=self.name,
+            model_id=body.get("model", chain[0]),
+            web_used=False,
+        )
+
+
+class AutoClient(LLMClient):
+    """Explicit opt-in fallback chain, cost order: Claude (free, OAuth) →
+    Gemini (free tier) → DeepSeek (cheap) → OpenRouter's free-tier catalog.
+    See the module docstring: this is the one client where a missing key or
+    a failure moves to the next link instead of raising, because choosing
+    'auto' IS the deliberate acceptance of 'whichever of these answers.'"""
+
+    name = "auto"
+    supports_web = False
+    _MODEL = ""  # resolved per call; model_id reports whichever link answered
+
+    _CHAIN: tuple[type[LLMClient], ...] = (
+        ClaudeOAuthClient,
+        GeminiClient,
+        DeepSeekClient,
+        OpenRouterFreeClient,
+    )
+
+    def __init__(self) -> None:
+        pass  # no single key — provider_status() special-cases "auto"
+
+    @property
+    def model_id(self) -> str:
+        return self._MODEL
+
+    def ask(self, system: str, user: str, web: bool = False) -> Answer:
+        failures: list[str] = []
+        for cls in self._CHAIN:
+            try:
+                client = cls()
+                answer = client.ask(system, user, web=web and cls.supports_web)
+            except Exception as exc:  # noqa: BLE001 - any failure means try the next link
+                detail = f"{cls.name}: {exc}"
+                failures.append(detail)
+                logger.warning("auto: %s unavailable, trying next — %s", cls.name, detail)
+                continue
+            self._MODEL = answer.model_id
+            return answer
+        raise LLMUnavailable("auto: every provider failed — " + " | ".join(failures))
+
+
 # Registry. Order is the UI's display order, and the first entry is the
 # default. Deliberately no plain Anthropic API-key client — see the module
-# docstring.
+# docstring. `openrouter` is deliberately absent: it's Auto-only.
 _PROVIDERS: dict[str, type[LLMClient]] = {
+    "auto": AutoClient,
+    "claude": ClaudeOAuthClient,
     "gemini": GeminiClient,
     "deepseek": DeepSeekClient,
-    "claude": ClaudeOAuthClient,
 }
 
 _ENV_KEY = {
+    "claude": "CLAUDE_CODE_OAUTH_TOKEN",
     "gemini": "GEMINI_API_KEY",
     "deepseek": "DEEPSEEK_API_KEY",
-    "claude": "CLAUDE_CODE_OAUTH_TOKEN",
 }
+
+# What "auto" is configured means: at least one link in its chain has a key.
+_AUTO_CHAIN_ENV_KEYS = (
+    "CLAUDE_CODE_OAUTH_TOKEN",
+    "GEMINI_API_KEY",
+    "DEEPSEEK_API_KEY",
+    "OPENROUTER_API_KEY",
+)
 
 
 def provider_names() -> list[str]:
@@ -385,12 +528,21 @@ def provider_status() -> list[dict]:
     configured_default = (get_settings().llm_provider or DEFAULT_PROVIDER).lower()
     rows = []
     for name, cls in _PROVIDERS.items():
+        if name == "auto":
+            # Configured means "at least one link works," not "one env key" —
+            # auto degrades gracefully as links are added/removed, never
+            # itself the reason a call fails.
+            configured = any(os.environ.get(k, "") for k in _AUTO_CHAIN_ENV_KEYS)
+            env_key = None
+        else:
+            configured = bool(os.environ.get(_ENV_KEY[name], ""))
+            env_key = _ENV_KEY[name]
         rows.append(
             {
                 "provider": name,
                 "model_id": cls._MODEL,
-                "configured": bool(os.environ.get(_ENV_KEY[name], "")),
-                "env_key": _ENV_KEY[name],
+                "configured": configured,
+                "env_key": env_key,
                 "supports_web": cls.supports_web,
                 "is_default": name == configured_default,
             }

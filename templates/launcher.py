@@ -6,8 +6,8 @@ Two problems this solves for every workspace dashboard.
 handler, which errors on a cold launch when the default is a Chromium fork
 (Thorium, in this workspace). So the exe is launched *directly* with the URL
 as an argument, which does not hit that failure: `DASH_BROWSER` if set, else
-the first of Thorium / Brave / Chrome / Edge actually installed, and only then
-the OS default. Thorium leads because it is the user's daily browser — the
+the first of Thorium / Brave / Chrome / Edge / Opera actually installed, and
+only then the OS default. Thorium leads because it is the user's daily browser — the
 workspace browser rule is that terminal-driven `uv run` opens there, while
 Claude's test instances use `DASH_BROWSER=chrome` with `?test=TestN-<app>` in
 the URL (the app sets the tab title from it) and are closed after testing.
@@ -62,9 +62,15 @@ _BROWSERS: dict[str, tuple[str, ...]] = {
         r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
         "msedge",
     ),
+    "opera": (
+        r"~\AppData\Local\Programs\Opera\opera.exe",
+        r"C:\Program Files\Opera\opera.exe",
+        r"C:\Program Files (x86)\Opera\opera.exe",
+        "opera",
+    ),
 }
 
-_PREFERENCE = ("thorium", "brave", "chrome", "edge")
+_PREFERENCE = ("thorium", "brave", "chrome", "edge", "opera")
 
 
 def _resolve(candidate: str) -> str | None:

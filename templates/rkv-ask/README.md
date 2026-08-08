@@ -72,7 +72,7 @@ Define `window.ASK_CONFIG` **before** loading `ask.js`:
     endpoint: '/api/ask',
     configUrl: '/api/config',
     testUrl: '/api/ask/test',        // omit if not implemented
-    providers: ['gemini', 'deepseek', 'claude'],
+    providers: ['auto', 'claude', 'gemini', 'deepseek'],
     emptyText: 'Ask anything about …',
     showWebToggle: true,             // false where no web search exists
     defaultContext: () => ({ entity_type: 'market', entity_id: null }),
@@ -97,6 +97,13 @@ silently**; an invisible context is a stale-context bug waiting to happen.
 **Provider layer**: `llm_client.py` in this folder — `get_client(name)` and
 `provider_status()` back the two endpoints below. Don't reimplement the
 registry, retry, or model-pinning; copy the file and prune providers.
+
+`AutoClient` is the registry's one deliberate exception to "a missing key
+raises immediately": it walks claude → gemini → deepseek →
+`OpenRouterFreeClient` (OpenRouter's $0 free-tier catalog, never
+independently selectable) in cost order and answers with whichever works.
+Every concrete provider still fails loudly on its own — see the module
+docstring before changing either.
 
 **The two-endpoint rule** (PATTERNS.md §1a) — "a key is present" and "the key
 works" are different claims:

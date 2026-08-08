@@ -39,13 +39,22 @@ $WorkspaceScoped = @('advisor', 'backup', 'retire')
 #   ibd    — frozen at tag ibd-frozen, read-only; not listed at all
 #   zp_scm — archived to zArchive/zp_scm (2026-08-02)
 #
-# `Ask` is where that project vendors the rkv-ask dock. $null means "this project
-# does not use it", and no directory is created:
+# `Ask` is where that project vendors the rkv-ask dock. $null means "do not
+# auto-sync ask.js/ask.css/README.md here" — either the project doesn't use
+# the dock, or (mktdb) this script's single-directory model doesn't fit it:
 #   kite   — has a hand-written dock on its own tokens; it is the UPSTREAM this
 #            component was extracted from, so fanning the kit copy in would be
 #            backwards. Migrating kite onto the vendored component is its own
 #            feature.
-#   mktdb, aidc — no Ask AI feature.
+#   mktdb  — DOES have the Ask AI dock (static/js/ask.js), unlike the stale
+#            claim this comment used to make — but splits js and css into
+#            different directories (static/js/ vs static/css/) rather than
+#            co-locating them like ibf's static/vendor/rkv-ask/, so it can't
+#            use this script's one-Ask-dir-holds-all-three-files model
+#            without extending Sync-One to take separate js/css destinations.
+#            Kept manual for now: when ask.js changes in the kit, hand-copy
+#            it into mktdb's static/js/ask.js too.
+#   aidc   — no Ask AI feature.
 $Projects = @(
     @{ Path = 'C:\Users\kashi\workspace\python\ibf'
        Brand = 'static\brand.css';      Ask = 'static\vendor\rkv-ask' }

@@ -63,6 +63,8 @@ const ask = {
   copiedIdx: new Set(),
   ctx: null, // {entity_type, entity_id, label} or null for the default scope
   test: null, // {ok, detail} from the last provider test
+  draft: '', // in-progress input text — backs #ask-input so a full re-render
+             // (e.g. on provider change) never wipes what the user typed
 };
 let askDock = null;
 
@@ -81,28 +83,79 @@ function askMdInline(s) {
     .replace(/(^|[^*])\*([^*\s][^*]*?)\*/g, '$1<em>$2</em>');
 }
 
+// A GFM table row: starts and ends with `|`. The separator row (`|---|:--:|`)
+// is the same shape with every cell reduced to dashes/colons — checked
+// separately so a row of literal hyphens in prose can't be mistaken for one.
+function askMdIsTableRow(line) {
+  return /^\s*\|.*\|\s*$/.test(line);
+}
+function askMdIsTableSep(line) {
+  if (!askMdIsTableRow(line)) return false;
+  const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
+  return cells.length > 0 && cells.every((c) => /^\s*:?-{1,}:?\s*$/.test(c));
+}
+function askMdSplitRow(line) {
+  return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
+}
+
 function askMd(text) {
-  const lines = askEsc(text).split('\n');
+  // \r stripped once up front rather than per-branch, so the table lookahead
+  // (peeking at lines[i+1]) doesn't need its own copy of the same strip.
+  const lines = askEsc(text).split('\n').map((l) => l.replace(/\r$/, ''));
   let html = '';
   let inList = false;
   const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
-  for (const raw of lines) {
-    const line = raw.replace(/\r$/, '');
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // A header row is only a table if a separator follows — tolerating a
+    // blank line in between, because some models (and some paste/render
+    // paths) put one between every table line, not just standard tight GFM.
+    // A single blank line never terminates a table; only a non-blank,
+    // non-`|` line does. Without this, a stray line of pipes elsewhere (e.g.
+    // a shell command) still can't be mistaken for a table, since it would
+    // need an actual separator row to follow.
+    if (askMdIsTableRow(line)) {
+      let k = i + 1;
+      while (k < lines.length && lines[k].trim() === '') k++;
+      if (k < lines.length && askMdIsTableSep(lines[k])) {
+        closeList();
+        const head = askMdSplitRow(line)
+          .map((c) => `<th>${askMdInline(c)}</th>`).join('');
+        let body = '';
+        let j = k + 1;
+        while (j < lines.length) {
+          if (lines[j].trim() === '') { j++; continue; }
+          if (!askMdIsTableRow(lines[j])) break;
+          const cells = askMdSplitRow(lines[j])
+            .map((c) => `<td>${askMdInline(c)}</td>`).join('');
+          body += `<tr>${cells}</tr>`;
+          j++;
+        }
+        html += `<div class="ask-table-wrap"><table><thead><tr>${head}</tr></thead>`
+          + `<tbody>${body}</tbody></table></div>`;
+        i = j;
+        continue;
+      }
+    }
+
     const bullet = line.match(/^\s*[-*]\s+(.*)$/);
     const numbered = line.match(/^\s*\d+\.\s+(.*)$/);
-    const head = line.match(/^\s*(#{1,3})\s+(.*)$/);
+    const headMatch = line.match(/^\s*(#{1,3})\s+(.*)$/);
     if (bullet || numbered) {
       if (!inList) { html += '<ul>'; inList = true; }
       html += '<li>' + askMdInline((bullet || numbered)[1]) + '</li>';
-    } else if (head) {
+    } else if (headMatch) {
       closeList();
-      html += '<div class="md-h">' + askMdInline(head[2]) + '</div>';
+      html += '<div class="md-h">' + askMdInline(headMatch[2]) + '</div>';
     } else if (line.trim() === '') {
       closeList();
     } else {
       closeList();
       html += '<p>' + askMdInline(line) + '</p>';
     }
+    i++;
   }
   closeList();
   return html || '<p></p>';
@@ -199,7 +252,7 @@ function renderAsk() {
     ${chips}
     ${exhausted ? '<div class="ask-exhausted">Follow-up thread complete — <b>Reset</b> to start a new one.</div>' : ''}
     <div class="ask-input-row">
-      <input class="ask-input" id="ask-input" type="text" placeholder="${exhausted ? 'Reset to ask again…' : 'Ask a question…'}" ${inputDisabled ? 'disabled' : ''}>
+      <input class="ask-input" id="ask-input" type="text" value="${askEsc(ask.draft)}" placeholder="${exhausted ? 'Reset to ask again…' : 'Ask a question…'}" ${inputDisabled ? 'disabled' : ''}>
       <button class="ask-send" data-ask-send ${inputDisabled ? 'disabled' : ''}>Ask</button>
     </div>
   </div>`;
@@ -208,7 +261,10 @@ function renderAsk() {
   const thr = document.getElementById('ask-thread');
   if (thr) thr.scrollTop = thr.scrollHeight;
   const inp = document.getElementById('ask-input');
-  if (inp && !inputDisabled) inp.focus();
+  if (inp && !inputDisabled) {
+    inp.focus();
+    inp.setSelectionRange(inp.value.length, inp.value.length); // cursor at end, not start
+  }
 }
 
 /* ---- wiring ------------------------------------------------------------ */
@@ -226,14 +282,14 @@ function askBind() {
   q('[data-ask-test]', () => askTestProvider());
   q('[data-ask-ctx-clear]', () => { ask.ctx = null; renderAsk(); });
   q('[data-ask-chip]', (el) => {
-    const inp = document.getElementById('ask-input');
-    if (inp) inp.value = el.dataset.askChip;
+    ask.draft = el.dataset.askChip;
     askSend();
   });
   q('[data-ask-copy]', (el) => askCopy(Number(el.dataset.askCopy)));
 
   const inp = askDock.querySelector('#ask-input');
   if (inp) {
+    inp.addEventListener('input', (e) => { ask.draft = e.target.value; });
     inp.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); askSend(); }
     });
@@ -242,8 +298,7 @@ function askBind() {
 
 /* ---- send -------------------------------------------------------------- */
 async function askSend() {
-  const inp = document.getElementById('ask-input');
-  const prompt = inp && inp.value ? inp.value.trim() : '';
+  const prompt = ask.draft ? ask.draft.trim() : '';
   if (!prompt || ask.busy) return;
   if (ask.started && ask.left <= 0) return;
 
@@ -255,6 +310,7 @@ async function askSend() {
   ask.messages.push({ role: 'user', content: prompt });
   ask.messages.push({ role: 'pending' });
   ask.suggestions = [];
+  ask.draft = '';
   ask.busy = true;
   renderAsk();
 
@@ -323,6 +379,7 @@ function askReset() {
   ask.started = false;
   ask.left = ASK_CFG.maxFollowups;
   ask.busy = false;
+  ask.draft = '';
   ask.copiedIdx.clear();
   renderAsk();
 }

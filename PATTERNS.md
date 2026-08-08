@@ -87,13 +87,20 @@ Persistent settings belong in **Config**, not in the Ask panel. A setting that
 lives next to the thing it configures gets set once and lost on reload.
 
 - Provider choice and web-search toggle are config keys (`LLM_PROVIDER`,
-  `LLM_WEB_SEARCH`), in `EDITABLE_KEYS`, rendered in the Config tab.
-- Each provider row shows: model ID, configured/unconfigured chip, and a
-  **Test** button writing `✓ <model> replied <text>` or `✗ <detail>` inline,
-  with the full detail in `title=`. Cache results in UI state so they survive
-  a re-render.
-- **Test results are per-provider and never global.** "The LLM is down" is not
-  a thing; "gemini is rate-limited" is.
+  `LLM_WEB_SEARCH`), in `EDITABLE_KEYS`.
+- **No bespoke provider panel, no per-provider Test button.** An earlier
+  version of this pattern specified a dedicated Config-tab panel (model ID,
+  configured/unconfigured chip, a live-round-trip Test button per row) — that
+  panel has been **removed** everywhere it existed (ibf, kite). Render
+  `LLM_PROVIDER` exactly like every other editable key: a plain dropdown/radio
+  sourced from the provider registry (`field_choices()`/`_provider_choices()`
+  reading `PROVIDERS`, never a hardcoded copy of the names), no test button.
+  Verifying a provider actually works now happens by using the Ask AI dock
+  itself, not a separate diagnostic control — the dock's own error bubble
+  (§1e) already surfaces exactly the same failure a Test button would have.
+  §1a's two-endpoint rule (`/providers` free, `/test` one real round-trip)
+  still stands as a *backend* contract — `/api/ask/test` is worth keeping as
+  a debug/smoke-test endpoint — the UI surface on top of it is what's gone.
 
 **Assert the allow-list is reachable.** Any key in `EDITABLE_KEYS` that no UI
 renders is a key that can only be changed by hand-editing YAML — a trap. Write
@@ -189,6 +196,83 @@ goes *brighter* in dark mode) — the text sitting on the accent must flip with 
   path only — grounded/search calls need thinking enabled.
 - **Grounding metadata is best-effort.** Extract citations defensively; a
   restructured grounding block should cost you the citations, never the answer.
+
+### 1f. Auto mode and the auto-only registry pattern — `canon`
+
+**"Auto" is a fourth, deliberate provider choice — not a hidden default
+behaviour.** Every concrete provider (`claude`/`gemini`/`deepseek`) still
+fails loudly on its own, exactly as §1's "missing key fails at construction,
+never a silent fallback" says. Picking `auto` is the user's explicit,
+informed opt-in to the opposite trade: try each provider in a fixed,
+cost-ordered chain and answer with whichever works, because an unanswered
+question is worse than an answer from whichever model was actually available.
+`auto` is `DEFAULT_PROVIDER` (first entry in the registry) in every project
+that has this pattern (ibf, kite, mktdb) — check both the code-level default
+*and* every persisted config file (`config.yml`, `<app>_config.yml`, any
+`.local.yml` overlay) when introducing or auditing this; a stale `gemini`/
+`claude` sitting in a committed or local-overlay YAML silently overrides the
+code default and is easy to miss (found stale in three separate files across
+two projects the first time this was audited).
+
+**Chain order, cost-first:** `claude` (OAuth subscription, ~$0 marginal) →
+`gemini` (free daily tier) → `deepseek` (cheap metered) → `openrouter`
+(OpenRouter's genuinely-$0 `:free` model catalog — see below). A project with
+its own web-search-grounded LLM capability inserts that as one more link
+before the final catch-all (see GeminiSearch below) — never as a *replacement*
+for a link, since each link answers to a different failure mode.
+
+**`Auto` overrides `ask()` directly, not `_call()`/the per-call hook** — it
+needs to try whole other `Provider`/`LLMClient` instances (each with their own
+retry), not one HTTP call. Catch broad `Exception` per link, log which link
+failed and why before moving on, and raise only when every link is exhausted
+— the raised message names every failure, because "the scan failed" or "no
+provider answered" with no chain detail is undebuggable.
+
+**OpenRouter as the last-resort link — free tier only, no BYOK.**
+OpenRouter's `:free`-suffixed models are genuinely $0-cost, separate compute
+from Gemini/DeepSeek's own quotas, and need no OpenRouter account balance —
+this is what makes OpenRouter usable as a bottom-of-the-chain safety net with
+zero ongoing cost. **Do not use OpenRouter BYOK (linking your own
+Gemini/DeepSeek API key into OpenRouter) as a way to add headroom — it bills
+the SAME linked key/quota**, so it cannot rescue a call that failed because
+that key's own quota is exhausted; it's a routing/observability convenience
+only, not extra capacity. The `:free` roster **rotates** as OpenRouter's
+provider deals change — a model pinned and confirmed live on one date can be
+gone weeks later (confirmed: `meta-llama/*:free` and `qwen/*:free`, assumed
+available when this pattern was first written, were both gone from the free
+tier one week later). Reverify against `openrouter.ai/models?max_price=0`
+before pinning, and periodically after.
+
+**`openrouter` (and any project-specific extra link, e.g. `geminisearch`) is
+registered in the client dict but deliberately absent from the validated
+"legal direct pick" set** (`PROVIDERS` for ibf/kite's registry-is-the-allowlist
+design; `VALID_PROVIDERS` for mktdb's separately-validated design) — reachable
+only through `auto`'s fixed chain, never independently selectable. This keeps
+a provider whose only purpose is "one more fallback attempt" out of the
+user-facing menu without needing a second registry. Guard the factory function
+itself (`get_client()`/`get_llm_client()`) against a hand-edited config
+forcing a direct pick of an auto-only name, even though the UI never offers it.
+
+**GeminiSearch — an auto-only link for a project with its own web-search
+client.** A project that already has a Tavily-style `SearchClient`
+abstraction (own quota, own free tier) can hit the same "ran out mid-sweep"
+failure Gemini's free tier motivated the LLM chain for. Where the project's
+`GeminiClient` already supports search grounding, don't build a second
+grounding implementation — add a thin subclass that just flips the grounding
+flag (`_GROUNDED = True`) and reuse it from **two** places: as one more link
+in the Auto chain (after the cheaper/plainer providers, before the final
+free-tier catch-all — it shares `GEMINI_API_KEY`'s quota with the plain
+`gemini` link, so it is a real but *quota-shared* second attempt, not free
+extra capacity), and wrapped in a `SearchClient` adapter that repackages the
+grounded answer + citations into the search abstraction's own result shape so
+every existing search call site needs zero changes. Same "auto-only, never a
+direct pick" registry treatment applies to the search-side chain too — mirror
+`FallbackClient` as `SearchFallbackClient`, but let it **degrade to an empty
+result list** rather than raising when every link fails: a scan with no fresh
+signal for one query is a known, already-handled outcome; a crashed sweep is
+not — this is the one place `auto` degrades to *nothing* instead of raising,
+because unlike an unanswered Ask AI question, an empty search result was
+already a legal, expected outcome before this pattern existed.
 
 ---
 

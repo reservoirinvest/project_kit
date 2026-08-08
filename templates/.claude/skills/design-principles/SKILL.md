@@ -74,6 +74,14 @@ copy already sitting in the repo.
   persistence across re-renders, markdown escaping, error bubbles that keep
   the thread alive) the dock already handles. Grep for `#askDock` before
   writing any Ask AI frontend code.
+- **`auto` is `DEFAULT_PROVIDER`** — a fourth, deliberate choice that walks
+  claude → gemini → deepseek → openrouter (OpenRouter's $0 free-tier catalog,
+  never independently selectable, never BYOK) and answers with whichever
+  works; every concrete provider still fails loudly on its own. No Test
+  button/provider panel in Config anymore — `LLM_PROVIDER` renders like any
+  other editable key. Full rationale, the auto-only-registry pattern, and the
+  GeminiSearch extension (for a project with its own Tavily-style search
+  client): PATTERNS.md §1f.
 
 ### 2.2 Two-track AI writes: insights vs recommendations
 An automated scan **never mutates an entity directly**:
