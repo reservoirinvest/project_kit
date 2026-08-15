@@ -196,6 +196,48 @@ A grid dense enough to be worth building is dense enough to need all of this.
   matches nothing. Put both forms in the haystack. This one ships broken and
   stays broken, because the developer tests it with the stored value.
 
+### 2.15 Numeric inputs in a settings form
+A spinner is a promise that pressing it is safe. Both halves below are what
+makes that true, and they fail as one bug seen from two sides.
+
+- **The step follows the SHAPE of the value, not its declared type.**
+  `##` -> 5, `#` -> 1, `#.#` -> 0.1, `#.##` -> 0.05, read off the rendered
+  value. `int -> 1, float -> "any"` is the default nobody revisits, and
+  `"any"` means *the browser steps by 1*: a std-dev multiplier of 1.2 nudges to
+  2.2 while a 50-day window crawls one day per press. Both wrong, and for the
+  same reason — the step was a property of the type when it is a property of the
+  quantity. Two fields of the same type routinely want steps two orders of
+  magnitude apart.
+- **Every numeric field declares its RANGE in the model**, as inclusive
+  constraints, and the form is *served* those bounds rather than mirroring them
+  in the client. One declaration then does three jobs: the write is refused, a
+  hand-edited config file is refused the same way, and the spinner cannot reach
+  the bad value at all. A range mirrored in JavaScript is the copy that stops
+  matching, and unlike a stale type — which renders the wrong editor and you
+  notice — a stale range just quietly stops guarding.
+- **A bound is a fact about the quantity, never a preference about the
+  strategy.** A standard-deviation multiplier below zero puts the strike on the
+  wrong side of spot; a fraction of net worth above 1.0 is not "aggressive", it
+  is unreachable. But "50 days is a long expiry" is taste, and taste does not go
+  in the type. If you cannot say what makes the value *meaningless*, leave it
+  unbounded.
+- **Inclusive bounds only** (`ge`/`le`, never `gt`/`lt`). HTML's `min`/`max` are
+  inclusive, so an exclusive constraint leaves the spinner able to land on a
+  value the server then rejects — reintroducing the split brain the served
+  bounds exist to remove. Where zero is genuinely dangerous, pick an honest
+  floor (`ge=0.25`) rather than approximating `gt=0`.
+- **Bound the collection-valued knobs too.** A scalar is a spinner you can
+  fence; its per-key override map is hand-typed JSON, so it is the path most
+  likely to carry the typo and the only place a floor can live is the element
+  type (`dict[str, Annotated[float, Field(ge=0)]]`).
+- **A test asserts no numeric key is unbounded**, or the guard rots on the next
+  knob added. Same reasoning as the tooltip rule in §2.13: make the omission
+  impossible rather than remembered.
+- **The rejection message is one line naming the key as it appears ON SCREEN.**
+  It lands in a table cell beside the field just edited; a validator's raw
+  multi-line report with a docs URL is not an error message, it is a stack
+  trace wearing one.
+
 ### 2.14 Long-running work reports progress
 Anything over ~2 s says what it is doing, wherever it is running from.
 
