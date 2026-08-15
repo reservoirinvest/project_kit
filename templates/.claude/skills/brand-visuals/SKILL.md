@@ -1,3 +1,8 @@
+---
+name: brand-visuals
+description: Use whenever a feature produces HTML, SVG, a dashboard, a chart, or any visual artifact. Carries the RKV Strategic Advisory palette as five named skins in a hash-locked brand.css — pick a skin via the data-skin attribute, never edit a colour or hardcode a hex.
+---
+
 # SKILL: brand-visuals
 
 Trigger whenever a feature produces HTML, SVG, a dashboard, a chart, or any

@@ -1,3 +1,8 @@
+---
+name: find-icon
+description: Use when the user asks to "find an icon for X" or "what icon should I use for Y", or when a taxonomy/UI node needs an SVG icon that does not exist in static/img/. Gives the source priority order, starting with Phosphor Icons.
+---
+
 # SKILL: find-icon
 
 Trigger when the user asks to "find an icon for X", "what icon should I use for Y",

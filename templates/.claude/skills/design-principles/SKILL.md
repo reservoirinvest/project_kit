@@ -1,3 +1,8 @@
+---
+name: design-principles
+description: Use at every Plan Mode session, and whenever a feature introduces a new core abstraction, schema or on-disk format, external provider, AI-proposed write path, or multi-state model. The pattern catalogue plus the non-negotiables — start architectural thinking here rather than rediscovering these patterns.
+---
+
 # SKILL: design-principles
 
 Trigger this at every Plan Mode session, and whenever a feature introduces a

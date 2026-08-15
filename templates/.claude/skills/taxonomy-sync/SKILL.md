@@ -1,3 +1,8 @@
+---
+name: taxonomy-sync
+description: Use in a project owning an "ecosystem canvas" / L1-L3 process taxonomy (a src/core/taxonomy.py with a PROCESS_NODES forest) when asked to sync the taxonomy, reconcile with the master, promote processes upward, or check taxonomy drift — and before shipping any new sector/L2/L3 node in a fork.
+---
+
 # SKILL: taxonomy-sync
 
 Trigger when working in a project that owns an "ecosystem canvas" / L1–L3 process

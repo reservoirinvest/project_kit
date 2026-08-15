@@ -1,3 +1,8 @@
+---
+name: feature-build-loop
+description: Use when the user says "build Feature N", "start the next feature", "implement spec Feature N", or points at a new "## Feature N" section in spec.md. The canonical per-feature loop — spec-section targeting, core-vs-feature decision, Plan Mode gate, ambiguity gate, build, test, state files, risk flag, commit.
+---
+
 # SKILL: feature-build-loop
 
 Trigger this whenever the user says "build Feature N", "start the next feature",

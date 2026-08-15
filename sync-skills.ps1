@@ -46,6 +46,13 @@ $WorkspaceScoped = @('advisor', 'backup', 'retire')
 #            component was extracted from, so fanning the kit copy in would be
 #            backwards. Migrating kite onto the vendored component is its own
 #            feature.
+#   wheels — vendors the scaffold copy at the REPO ROOT (rkv-ask/), not under
+#            static/vendor/, and has not wired the dock into index.html at all.
+#            Pointing Ask at static\vendor\rkv-ask made the report claim three
+#            MISSING files and would have -Applied a second, unused copy beside
+#            the real one. Its README.md and llm_client.py are also AHEAD of the
+#            kit. Re-point this when the dock is actually wired, backporting the
+#            ahead files to the kit first.
 #   mktdb  — DOES have the Ask AI dock (static/js/ask.js), unlike the stale
 #            claim this comment used to make — but splits js and css into
 #            different directories (static/js/ vs static/css/) rather than
@@ -56,8 +63,16 @@ $WorkspaceScoped = @('advisor', 'backup', 'retire')
 #            it into mktdb's static/js/ask.js too.
 #   aidc   — no Ask AI feature.
 $Projects = @(
+    @{ Path = 'C:\Users\kashi\workspace\python\wheels'
+       Brand = 'static\brand.css';      Ask = $null }
     @{ Path = 'C:\Users\kashi\workspace\python\ibf'
        Brand = 'static\brand.css';      Ask = 'static\vendor\rkv-ask' }
+    # rolodex is CLI-only — no port, no served dashboard, so no brand.css asset
+    # and no Ask dock. It is listed anyway because it CARRIES kit skills, and an
+    # unlisted carrier is exactly how kite drifted for weeks (see above): the
+    # skill loop below fans out regardless of Brand/Ask being $null.
+    @{ Path = 'C:\Users\kashi\workspace\python\rolodex'
+       Brand = $null;                   Ask = $null }
     @{ Path = 'C:\Users\kashi\workspace\python\kite'
        Brand = 'static\brand.css';      Ask = $null }
     @{ Path = 'C:\Users\kashi\workspace\python\mktdb'
